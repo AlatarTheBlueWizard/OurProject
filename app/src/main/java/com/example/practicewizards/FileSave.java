@@ -1,44 +1,75 @@
 package com.example.practicewizards;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.util.Log;
-import android.widget.Toast;
+import android.view.View;
+import android.widget.ImageView;
 
 import java.io.File;
-import java.net.URI;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
-import static android.content.ContentValues.TAG;
+import static android.app.Activity.RESULT_OK;
+
 
 public class FileSave {
-    private URI imageUri;
+    ImageView mImageView;
 
-    Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
-    File photo;
-
-    try {
-        //place to store the picture that was taken
-        photo = this.createTemporaryFile("picture", ".jpg");
-        photo.delete();
-    } catch(Exception e) {
-        Log.v(TAG, "Can't create file to take the picture");
-        Toast.makeText(activity, "Please check SD card! Image shot is impossible!", 10000);
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        mImageView=(ImageView)findViewById(R.id.imageView) ;
     }
 
-    imageUri = Uri.fromFile(photo);
-    intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
 
-    //start camera intent
-    activity.startActivityForResult(this, intent, MenuShootImage);
-
-    private File createTemporaryFile(String part, String ext) throws Exception {
-        File tempDir = Environment.getExternalStorageDirectory();
-        tempDir = new File(tempDir.getAbsolutePath()+"/.temp/");
-        if(!tempDir.exists()) {
-            tempDir.mkdirs();
+    static final int REQUEST_IMAGE_CAPTURE=1;
+    public void bucapture(View view) {
+        Intent takePictureIntent=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if(takePictureIntent.resolveActivity(getPackageManager())!=null){
+            startActivityForResult(takePictureIntent,REQUEST_IMAGE_CAPTURE);
         }
-        return File.createTempFile(part, ext, tempDir);
+
+    }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if(requestCode==REQUEST_IMAGE_CAPTURE && resultCode==RESULT_OK){
+            Bundle extras=data.getExtras();
+            Bitmap imageBitmap=(Bitmap) extras.get("data");
+            mImageView.setImageBitmap(imageBitmap);
+            try {
+                createImageFile();
+                galleryAddpic();
+
+            }catch (Exception ex){
+                ex.printStackTrace();
+            }
+
+        }
+    }
+
+    String mCurrentPhotpPath;
+    //create image name
+    private File createImageFile() throws IOException, IOException {
+        String timeStamp=new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName="JPGE"+timeStamp+"_";
+        File storgeDir= Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        File image=File.createTempFile(imageFileName,".jpg",storgeDir);
+        mCurrentPhotpPath="file:"+image.getAbsolutePath();
+        return image;
+    }
+
+
+    //save image
+    private void galleryAddpic(){
+        Intent mediaScanIntent=new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        File f=new File(mCurrentPhotpPath);
+        Uri contentUri=Uri.fromFile(f);
+        mediaScanIntent.setData(contentUri);
+        this.sendBroadcast(mediaScanIntent);
     }
 }
