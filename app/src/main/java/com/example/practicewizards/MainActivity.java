@@ -13,4 +13,5 @@ public class MainActivity extends AppCompatActivity {
     //Resolved merge conflict
     // Benjamin
     //Brian
+
 }
