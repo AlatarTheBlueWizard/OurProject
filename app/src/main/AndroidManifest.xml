@@ -3,7 +3,11 @@
     package="com.example.practicewizards">
 
     <!-- Camera Permissions -->
+    <!-- For regular rear-facing camera -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- For front facing -->
+    <uses-feature android:name="android.hardware.camera.front" />
+    <!-- may need android.hardware.camera.level.full -->
     <uses-feature android:name="android.hardware.camera" />
 
     <application
