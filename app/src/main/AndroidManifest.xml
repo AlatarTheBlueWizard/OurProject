@@ -9,6 +9,8 @@
     <uses-feature android:name="android.hardware.camera.front" />
     <!-- may need android.hardware.camera.level.full -->
     <uses-feature android:name="android.hardware.camera" />
+    <!-- Allows for photo to be stored in a file -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
