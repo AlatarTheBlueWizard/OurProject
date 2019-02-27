@@ -19,4 +19,14 @@ public class ExampleUnitTest {
     public void multiply_isCorrect() {
         assertEquals(10, 5*2 );
     }
+
+    @Test
+    public boolean are_files_saved() {
+        return false;
+    }
+
+    @Test
+    public boolean test_if_image_returns() {
+        return false;
+    }
 }
