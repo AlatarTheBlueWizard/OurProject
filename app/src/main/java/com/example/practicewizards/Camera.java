@@ -26,6 +26,7 @@ public class Camera {
      */
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public Camera() {
+
     }
 
 
