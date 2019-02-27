@@ -1,4 +1,4 @@
-package com.example.practicewizards;
+/*package com.example.practicewizards;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -72,4 +72,4 @@ public class FileSave {
         mediaScanIntent.setData(contentUri);
         this.sendBroadcast(mediaScanIntent);
     }
-}
+}*/
