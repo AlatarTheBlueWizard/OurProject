@@ -19,4 +19,9 @@ public class ExampleUnitTest {
     public void multiply_isCorrect() {
         assertEquals(10, 5*2 );
     }
+
+    @Test
+    public void test_camera_opening() {
+        Camera camera = new Camera()
+    }
 }

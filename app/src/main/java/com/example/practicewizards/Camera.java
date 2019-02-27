@@ -25,8 +25,13 @@ public class Camera {
      * Constructor for a Camera
      */
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public Camera() {
+    public Camera(boolean isRear) {
+        if (isRear) {
+            // Construct camera using rear facing view
+        }
     }
+
+
 
 
 }
