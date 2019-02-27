@@ -22,6 +22,7 @@ public class ExampleUnitTest {
 
     @Test
     public void test_camera_opening() {
-        Camera camera = new Camera()
+        Camera camera = new Camera(true);
+
     }
 }

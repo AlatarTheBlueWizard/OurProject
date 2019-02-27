@@ -1,11 +1,20 @@
 package com.example.practicewizards;
 
+import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.params.OutputConfiguration;
 import android.media.ImageReader;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.support.annotation.Nullable;
 import android.support.annotation.Size;
+import android.view.Surface;
+
+import java.util.List;
+
+import androidx.annotation.NonNull;
 
 /**
  * A class representing our Controller for the cameras
@@ -38,5 +47,87 @@ public class ManageCameras {
      * Non-default Constructor for ManageCameras to be called from main in the onCreate() method
      */
     ManageCameras() {
+    }
+
+    /**
+     * Creates and opens a front or rear facing camera (based on boolean), and creates a
+     * captureSession
+     * @return void for now, could return an image view or a file
+     */
+    void createCaptureSession(boolean isRear) {
+        if (isRear) {
+            cameraCaptureSession = new CameraCaptureSession() {
+                @NonNull
+                @Override
+                public CameraDevice getDevice() {
+                    return null;
+                }
+
+                @Override
+                public void prepare(@NonNull Surface surface) throws CameraAccessException {
+
+                }
+
+                @Override
+                public void finalizeOutputConfigurations(List<OutputConfiguration> outputConfigs)
+                        throws CameraAccessException {
+
+                }
+
+                @Override
+                public int capture(@NonNull CaptureRequest request, @Nullable CameraCaptureSession.
+                        CaptureCallback listener, @Nullable Handler handler)
+                        throws CameraAccessException {
+                    return 0;
+                }
+
+                @Override
+                public int captureBurst(@NonNull List<CaptureRequest> requests, @Nullable
+                        CameraCaptureSession.CaptureCallback listener, @Nullable Handler handler)
+                        throws CameraAccessException {
+                    return 0;
+                }
+
+                @Override
+                public int setRepeatingRequest(@NonNull CaptureRequest request, @Nullable
+                        CameraCaptureSession.CaptureCallback listener, @Nullable Handler handler)
+                        throws CameraAccessException {
+                    return 0;
+                }
+
+                @Override
+                public int setRepeatingBurst(@NonNull List<CaptureRequest> requests, @Nullable
+                        CameraCaptureSession.CaptureCallback listener, @Nullable Handler handler)
+                        throws CameraAccessException {
+                    return 0;
+                }
+
+                @Override
+                public void stopRepeating() throws CameraAccessException {
+
+                }
+
+                @Override
+                public void abortCaptures() throws CameraAccessException {
+
+                }
+
+                @Override
+                public boolean isReprocessable() {
+                    return false;
+                }
+
+                @Nullable
+                @Override
+                public Surface getInputSurface() {
+                    return null;
+                }
+
+                @Override
+                public void close() {
+
+                }
+            };
+        }
     }
 }

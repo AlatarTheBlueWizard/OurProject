@@ -1,7 +1,9 @@
 package com.example.practicewizards;
 
 import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
 
@@ -31,7 +33,14 @@ public class Camera {
         }
     }
 
+    void openCamera() {
 
+    }
 
+    CameraCharacteristics getCharacteristics() {
+        // Working on this
+        // return new CameraManager.getCameraCharacteristics(cameraDevice.getId());
+        return null;
+    }
 
 }
