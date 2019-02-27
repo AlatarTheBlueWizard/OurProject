@@ -35,6 +35,8 @@ public class ManageCameras {
     private ImageReader imageReader;
 
     /**
-     * Constructor for ManageCameras to be called from main in the onCreate() method
+     * Non-default Constructor for ManageCameras to be called from main in the onCreate() method
      */
+    ManageCameras() {
+    }
 }

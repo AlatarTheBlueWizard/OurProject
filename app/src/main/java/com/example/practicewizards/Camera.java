@@ -1,5 +1,6 @@
 package com.example.practicewizards;
 
+import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
@@ -26,4 +27,6 @@ public class Camera {
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public Camera() {
     }
+
+
 }
