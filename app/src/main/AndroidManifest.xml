@@ -2,6 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.practicewizards">
 
+    <!-- file paths -->
+    <paths xmlns:android="http://schemas.android.com/apk/res/android">
+        <external-path android:name="my_images" android:path="Android/data/com.example.package.name/files/Pictures"/>
+    </paths>
+
     <!-- Camera Permissions -->
     <!-- For regular rear-facing camera -->
     <uses-permission android:name="android.permission.CAMERA" />
@@ -10,7 +15,8 @@
     <!-- may need android.hardware.camera.level.full -->
     <uses-feature android:name="android.hardware.camera" />
     <!-- Allows for photo to be stored in a file -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+                     android:maxSdkVersion="18"/>
 
     <application
         android:allowBackup="true"
@@ -26,6 +32,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- file provider configuration -->
+        <provider
+            android:name="android.support.v4.content.FileProvider"
+            android:authorities="com.example.android.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
     </application>
 
 </manifest>
