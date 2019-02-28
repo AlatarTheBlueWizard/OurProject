@@ -30,6 +30,48 @@ public class ManageCameras {
     private CaptureRequest captureRequest;
     // Builder for the Capture request
     private CaptureRequest.Builder buildCapRequest;
+    // State Callback object to receive updates about the camera's state
+    // Returns a camera device to set up the specific camera device
+    private CameraDevice.StateCallback cameraStateCallback = new CameraDevice.StateCallback() {
+
+        /**
+         * Method called when specific camera device has called CameraDevice.close()
+         * @param camera
+         */
+        @Override
+        public void onClosed(@NonNull CameraDevice camera) {
+
+        }
+
+        /**
+         * Method to be called when specific camera device has finished opening
+         * @param camera
+         */
+        @Override
+        public void onOpened(@NonNull CameraDevice camera) {
+
+        }
+
+        /**
+         * Method to be called when specific camera device is no longer available to be used
+         * @param camera
+         */
+        @Override
+        public void onDisconnected(@NonNull CameraDevice camera) {
+
+        }
+
+        /**
+         * Method to be called when camera device has a fatal error
+         * @param camera
+         * @param error
+         */
+        @Override
+        public void onError(@NonNull CameraDevice camera, int error) {
+
+        }
+    }; // End state call back declaration
+
     // Not sure what this is used for but it was included on CameraAPI tutorial
     private static final int REQUEST_CAMERA_PERMISSION = 200;
     // Is flash supported?
