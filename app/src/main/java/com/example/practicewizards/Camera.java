@@ -76,6 +76,16 @@ public class Camera {
     }
 
     /**
+     * Closes the member object camera
+     */
+    void closeCamera() {
+        if (cameraDevice != null) {
+            cameraDevice.close();
+            cameraDevice = null;
+        }
+    }
+
+    /**
      * @return characteristics of the current camera
      */
     CameraCharacteristics getCharacteristics() {
