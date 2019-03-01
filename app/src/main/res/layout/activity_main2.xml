@@ -7,17 +7,17 @@
     tools:context=".MainActivity">
 
     <Button
-        android:id="@+id/btn_takeGroup"
+        android:id="@+id/btn_takeSelfie"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentBottom="true"
         android:layout_marginStart="64dp"
         android:layout_marginBottom="41dp"
-        android:text="@string/take_group" />
+        android:text="@string/take_selfie" />
 
     <Button
-        android:id="@+id/to_selfie"
+        android:id="@+id/to_editor"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
@@ -34,7 +34,7 @@
         android:layout_marginBottom="106dp" />
 
     <TextView
-        android:id="@+id/instruction_group"
+        android:id="@+id/instruction_selfie"
         android:layout_width="322dp"
         android:layout_height="40dp"
         android:layout_above="@+id/selfieView"
@@ -43,7 +43,7 @@
         android:layout_marginStart="49dp"
         android:layout_marginEnd="39dp"
         android:layout_marginBottom="18dp"
-        android:text="@string/instruction_group"
+        android:text="@string/instruction_selfie"
         android:textAlignment="center"
         android:textSize="24sp" />
 </RelativeLayout>
