@@ -24,6 +24,10 @@ import androidx.annotation.NonNull;
  * camera from rear to front (e.g. close one camera and open the other)
  */
 public class ManageCameras {
+    // TWO CAMERA OBJECTS
+    Camera cam1; // Rear facing
+    Camera cam2; // Front facing
+
     // Capture session
     private CameraCaptureSession cameraCaptureSession;
     // Capture request
@@ -49,7 +53,9 @@ public class ManageCameras {
          */
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
-
+            // Set our camera to the one returned from the state call back
+            // Not final yet, need to determine rear or front, will do later
+            cam1.setCameraDevice(camera);
         }
 
         /**
@@ -58,7 +64,10 @@ public class ManageCameras {
          */
         @Override
         public void onDisconnected(@NonNull CameraDevice camera) {
-
+            // Close camera and set our camera object keeping track of the camera device object
+            // to null
+            camera.close();
+            cam1.setCameraDevice(null);
         }
 
         /**
@@ -68,7 +77,10 @@ public class ManageCameras {
          */
         @Override
         public void onError(@NonNull CameraDevice camera, int error) {
-
+            // Close camera and set our camera object keeping track of the camera device object
+            // to null
+            camera.close();
+            cam1.setCameraDevice(null);
         }
     }; // End state call back declaration
 
@@ -89,15 +101,41 @@ public class ManageCameras {
      * Non-default Constructor for ManageCameras to be called from main in the onCreate() method
      */
     ManageCameras() {
+        // Create our two cameras, one for rear, one for front facing
+        cam1 = new Camera(true);
+        cam2 = new Camera(false);
+    }
+
+    /**
+     * Opens a camera
+     * @param isRear denotes which camera to open
+     * @return returns a string representing the camera's id which was open
+     */
+    String open(boolean isRear) {
+        // If is rear is true, open up rear camera (#1)
+        if (isRear) {
+            // Call its open method
+            cam1.openCamera();
+            return cam1.getCameraId(); // Return its ID
+        }
+        // Rear is false, open up front facing camera (#2)
+        else {
+            // Call its open method
+            cam2.openCamera();
+            return cam2.getCameraId(); // Return its ID
+        }
     }
 
     /**
      * Creates and opens a front or rear facing camera (based on boolean), and creates a
      * captureSession
+     * @param isRear signifies which camera needs to be created for our capture session
      * @return void for now, could return an image view or a file
      */
     void createCaptureSession(boolean isRear) {
+        // IF isRear is true, create a capture session based on the rear facing camera
         if (isRear) {
+            // Create capture session with rear facing camera
             cameraCaptureSession = new CameraCaptureSession() {
                 @NonNull
                 @Override
@@ -171,5 +209,21 @@ public class ManageCameras {
                 }
             };
         }
+    }
+
+    public Camera getRear() {
+        return cam1;
+    }
+
+    public void setRear(Camera cam1) {
+        this.cam1 = cam1;
+    }
+
+    public Camera getFront() {
+        return cam2;
+    }
+
+    public void setFront(Camera cam2) {
+        this.cam2 = cam2;
     }
 }
