@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
+import android.view.TextureView;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -17,6 +18,7 @@ import java.util.Date;
 public class MainActivity extends AppCompatActivity {
     private static final int CAMERA_REQUEST=1888;
     ImageView myImage;
+    private TextureView groupView;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {

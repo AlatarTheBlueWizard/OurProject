@@ -29,21 +29,24 @@
     <TextureView
         android:id="@+id/groupView"
         android:layout_width="wrap_content"
-        android:layout_height="1450px"
+        android:layout_height="1200px"
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="106dp" />
 
     <TextView
         android:id="@+id/instruction_selfie"
-        android:layout_width="322dp"
-        android:layout_height="40dp"
+        android:layout_width="wrap_content"
+        android:layout_height="39dp"
         android:layout_above="@+id/groupView"
         android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
-        android:layout_marginStart="49dp"
-        android:layout_marginEnd="39dp"
-        android:layout_marginBottom="18dp"
+        android:layout_marginStart="47dp"
+        android:layout_marginTop="98dp"
+        android:layout_marginEnd="41dp"
+        android:layout_marginBottom="27dp"
         android:text="@string/instruction_selfie"
         android:textAlignment="center"
+        android:textColor="#000"
         android:textSize="24sp" />
 </RelativeLayout>
