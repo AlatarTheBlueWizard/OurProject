@@ -1,10 +1,8 @@
 package com.example.practicewizards;
 
-import android.hardware.camera2.CameraDevice;
-
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -23,17 +21,17 @@ public class ExampleUnitTest {
     }
 
     @Test
-    public boolean are_files_saved() {
-        return false;
+    public void are_files_saved() {
+
     }
 
     @Test
-    public boolean test_if_image_returns() {
-        return false;
+    public void test_if_image_returns() {
+
     }
 
     @Test
-    public boolean manager_cameras_open_correctly() {
+    public void manager_cameras_open_correctly() {
         // Test camera's through manageCameras
         ManageCameras manageCameras = new ManageCameras();
         String cameraId = manageCameras.open(true);
@@ -43,31 +41,24 @@ public class ExampleUnitTest {
         manageCameras = new ManageCameras();
         cameraId = manageCameras.open(false);
         assert(cameraId != null);
-
-        return true;
     }
 
     // Going to test getters and setters because we I don't have much idea currently how to
     // unit test a camera
 
     @Test
-    public boolean test_camera_getters_setters() {
+    public void test_camera_getters_setters() {
         // Create our camera object, rear facing
         Camera camera = new Camera(true);
         camera.openCamera();
         assert(camera.getCameraDevice() != null);
-        return true;
     }
 
     @Test
-    public boolean test_manager_getters_setters() {
+    public void test_manager_getters_setters() {
         // Create camera manager
         ManageCameras manageCameras = new ManageCameras();
         manageCameras.open(true);
         assert(manageCameras.getRear() != null);
-        return true;
     }
-
-
-
 }
