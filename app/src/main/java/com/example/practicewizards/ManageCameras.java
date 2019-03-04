@@ -33,6 +33,7 @@ public class ManageCameras {
     // TWO CAMERA OBJECTS
     Camera cam1; // Rear facing
     Camera cam2; // Front facing
+    // MAY NOT NEED THESE? PONDER DELETING
     // Camera IDs
     String cam1Id;
     String cam2Id;
@@ -118,8 +119,13 @@ public class ManageCameras {
      */
     ManageCameras() {
         // Create our two cameras, one for rear, one for front facing
+        // OR WE COULD START OUR CAMERAS AT NULL... setup cameras will create the cameras
         cam1 = new Camera(true);
         cam2 = new Camera(false);
+
+        // Set private data to default
+        cam1Id = null;
+        cam2Id = null;
     }
 
     /**
@@ -144,7 +150,8 @@ public class ManageCameras {
 
     /**
      * Sets up the rear facing camera and the front facing camera
-     * This function will get the front facing cameraId
+     * This function will get the front facing cameraId and the rear facing cameraId
+     * and set cam1 and cam2 Id's
      * @param width EXPLAIN THIS BENJAMIN
      * @param height Explain
      * @param context Needed for getting the system service of that context, in our
@@ -172,12 +179,17 @@ public class ManageCameras {
                     // IF lens is back facing, then set our cam1 object
                     if (cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) ==
                             CameraCharacteristics.LENS_FACING_BACK) {
-                        cam1.setCameraDevice(null); // CHANGE THIS
+                        cam1.setCameraId(cameraId); // CHANGE THIS
                     }
                     // Check for front facing lens
                     else if (cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) ==
                              CameraCharacteristics.LENS_FACING_FRONT) {
-                        cam2.setCameraDevice(null); // CHANGE THIS
+                        cam2.setCameraId(cameraId); // CHANGE THIS
+                    }
+                    // Check if both cameraId's for front and back were found
+                    if (cam1.getCameraId() != null && cam2.getCameraId() != null) {
+                        // We're done, found both, return out
+                        return;
                     }
                 }
                 catch (NullPointerException nullPtrExc) {

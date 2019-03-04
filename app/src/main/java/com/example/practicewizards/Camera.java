@@ -66,6 +66,9 @@ public class Camera {
         else {
             // Construct camera using front facing view
         }
+
+        // Set id to default
+        cameraId = null;
     }
 
     /**
