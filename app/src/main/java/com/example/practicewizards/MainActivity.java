@@ -3,6 +3,7 @@ package com.example.practicewizards;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
+import android.hardware.camera2.CameraDevice;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -20,7 +21,7 @@ public class MainActivity extends AppCompatActivity {
     private TextureView.SurfaceTextureListener groupTextListener = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-            Toast.makeText(getApplicationContext(), "It's available!", Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(), "Group is available!", Toast.LENGTH_LONG).show();
         }
 
         @Override
@@ -38,6 +39,29 @@ public class MainActivity extends AppCompatActivity {
 
         }
     };
+
+    //CAMERA DEVICE FOR SELFIE VIEW
+    private CameraDevice groupCameraDevice;
+    private CameraDevice.StateCallback groupCameraDeviceStateCallback = new CameraDevice.StateCallback() {
+        @Override
+        public void onOpened(CameraDevice camera) {
+            groupCameraDevice = camera;
+        }
+
+        @Override
+        public void onDisconnected(CameraDevice camera) {
+            camera.close();
+            groupCameraDevice = null;
+        }
+
+        @Override
+        public void onError(CameraDevice camera, int error) {
+            camera.close();
+            groupCameraDevice = null;
+        }
+    };
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +84,19 @@ public class MainActivity extends AppCompatActivity {
 
         } else {
             groupView.setSurfaceTextureListener(groupTextListener);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        closeCamera();
+        super.onPause();
+    }
+
+    private void closeCamera() {
+        if(groupCameraDevice != null) {
+            groupCameraDevice.close(); // end camera process
+            groupCameraDevice = null; // set it to null
         }
     }
 
