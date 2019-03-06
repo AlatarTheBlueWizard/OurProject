@@ -1,6 +1,8 @@
 package com.example.practicewizards;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraDevice;
 import android.support.v7.app.AppCompatActivity;
@@ -77,6 +79,16 @@ public class Main2Activity extends AppCompatActivity {
     protected void onPause() {
         closeCamera();
         super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 
     private void closeCamera() {

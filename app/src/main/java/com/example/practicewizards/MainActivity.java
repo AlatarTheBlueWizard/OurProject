@@ -1,9 +1,14 @@
 package com.example.practicewizards;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -21,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
     private TextureView.SurfaceTextureListener groupTextListener = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-            Toast.makeText(getApplicationContext(), "Group is available!", Toast.LENGTH_LONG).show();
+            setUpCamera(width, height);
         }
 
         @Override
@@ -40,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    //CAMERA DEVICE FOR SELFIE VIEW
+    //CAMERA DEVICE FOR GROUP VIEW
     private CameraDevice groupCameraDevice;
     private CameraDevice.StateCallback groupCameraDeviceStateCallback = new CameraDevice.StateCallback() {
         @Override
@@ -60,6 +65,8 @@ public class MainActivity extends AppCompatActivity {
             groupCameraDevice = null;
         }
     };
+
+    private String groupCameraDeviceId;
 
 
 
@@ -81,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         if(groupView.isAvailable()) {
-
+            setUpCamera(groupView.getWidth(), groupView.getHeight());
         } else {
             groupView.setSurfaceTextureListener(groupTextListener);
         }
@@ -91,6 +98,33 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         closeCamera();
         super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
+
+    private void setUpCamera(int width, int height) {
+        CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+
+        try {
+            for(String cameraId : cameraManager.getCameraIdList()){
+                CameraCharacteristics cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId);
+                if(cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT) {
+                    continue;
+                }
+                groupCameraDeviceId = cameraId;
+                return;
+            }
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
     }
 
     private void closeCamera() {
