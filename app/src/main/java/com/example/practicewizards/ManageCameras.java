@@ -1,6 +1,8 @@
 package com.example.practicewizards;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -9,16 +11,20 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.media.ImageReader;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.Nullable;
 import android.support.annotation.Size;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.ContextThemeWrapper;
 import android.view.Surface;
+
+import java.lang.ref.WeakReference;
 import java.util.List;
 import android.support.annotation.NonNull;
-import android.content.Context;
+import android.widget.Toast;
 
 /**
  * A class representing our Controller for the cameras
@@ -33,10 +39,14 @@ public class ManageCameras {
     // TWO CAMERA OBJECTS
     Camera cam1; // Rear facing
     Camera cam2; // Front facing
-    // MAY NOT NEED THESE? PONDER DELETING
-    // Camera IDs
-    String cam1Id;
-    String cam2Id;
+
+    // ManageCameras contains a Weak Reference to whatever activity creates an object of it and
+    // uses it
+    WeakReference<AppCompatActivity> activityWeakReference;
+
+    // Request Code for camera
+    // Declared to some value
+    private static final int REQUEST_CAMERA_PERMISSION_RESULT = 200;
 
     // Capture session
     private CameraCaptureSession cameraCaptureSession;
@@ -99,14 +109,14 @@ public class ManageCameras {
     // Camera Characteristics for the certain camera
     private CameraCharacteristics cameraCharacteristics;
 
-    // Not sure what this is used for but it was included on CameraAPI tutorial
-    private static final int REQUEST_CAMERA_PERMISSION = 200;
     // Is flash supported?
     private boolean flashSupported;
-    // Handler for background
-    private Handler backgroundHandler;
-    // Handler for background thread
-    private HandlerThread backgroundHandlerThread;
+
+    // Background Handler
+    private Handler backgroundHandler;      // For handling threads
+    // Background Thread
+    private HandlerThread backgroundThread; // The specific background thread, runnable
+
     // Size of image
     private Size imageSize;
     // For Reading Image
@@ -122,10 +132,6 @@ public class ManageCameras {
         // OR WE COULD START OUR CAMERAS AT NULL... setup cameras will create the cameras
         cam1 = new Camera(true);
         cam2 = new Camera(false);
-
-        // Set private data to default
-        cam1Id = null;
-        cam2Id = null;
     }
 
     /**
@@ -204,7 +210,82 @@ public class ManageCameras {
             Log.e(TAG, "Error in retrieving camera ids");
             camAccessExc.printStackTrace(); // Print the Stack
         }
+    }
 
+    /**
+     * Connects to cameras. EXPLAIN MORE
+     * IMPORTANT: This method setupCameras() to be called first, as
+     * setupCameras() allocates our cameraManager object to equal
+     * context.getSystemService(Context.CAMERA_SERVICE);
+     */
+    void connectCameras() {
+        // Try to connect, throw if something goes wrong
+        try {
+            // Make sure camera manager is not null
+            if (cameraManager != null) {
+                // Try to open camera, could through CameraAccessException
+                try {
+                    // Preceding call requires a minimum API level, check through IF statement
+                    // See if sdk_int is >= 23 (Marshmallow Api Level)
+                    // Prompt user to grant or deny permission to use Marshmallow API on their specific
+                    // Device. This occurs once, during installation and first run-through of the app
+                    // If the user grants permission, then else is always run, if not then hopefully
+                    // user will grant because they can't use our app if not!
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        // Check permissions using weakReference's compat activity through get()
+                        // giving it the Manifest camera permissions static variable
+                        // If true, then permission has been granted through package manager variable
+                        if (ContextCompat.checkSelfPermission(activityWeakReference.get(),
+                                Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                            // Open camera through camera id, the stateCallBack, and our created
+                            // backgroundHandler
+                            cameraManager.openCamera(cam1.getCameraId(), cameraStateCallback,
+                                    backgroundHandler);
+                        }
+                        // Else ask for permissions
+                        else {
+                            // If user denied permissions once (at installation) but still wants to
+                            // run our app, ask again (diligence never fails!)
+                            // Call fancy show request permission through whatever reference we're
+                            // Using. Give it Manifest Camera Permission variable
+                            if (activityWeakReference.get().
+                                    shouldShowRequestPermissionRationale(
+                                            Manifest.permission.CAMERA)) {
+                                // Make a simple toast, could do something different if we choose to
+                                Toast.makeText(activityWeakReference.get(),
+                                        "App requires access to back and front cameras",
+                                        Toast.LENGTH_LONG).show();
+                            }
+                            // Now actually request the permissions through reference
+                            activityWeakReference.get().requestPermissions(
+                                    new String[] {Manifest.permission.CAMERA},
+                                    REQUEST_CAMERA_PERMISSION_RESULT);
+
+                        }
+                    }
+                    // Else simply call open camera through cameraManager
+                    else {
+                        // Open camera through camera id, the stateCallBack, and our created
+                        // backgroundHandler
+                        cameraManager.openCamera(cam1.getCameraId(), cameraStateCallback,
+                                backgroundHandler);
+                    }
+                }
+                // Catch camera access exception
+                catch (CameraAccessException camAccessExcep) {
+                    Log.e(TAG, "ERROR accessing camera in connectCameras()"); // Error msg.
+                    camAccessExcep.printStackTrace(); // Print Stack
+                }
+            }
+            else { // Camera Manager is null
+                throw new NullPointerException("MangeCameras.java");
+            }
+        }
+        // Catch if Camera Manager is null
+        catch (NullPointerException nullPtr) {
+            Log.e(TAG, "Camera Manager is null");
+            nullPtr.printStackTrace();
+        }
     }
 
     /**
@@ -291,6 +372,10 @@ public class ManageCameras {
             };
         }
     }
+
+    /**
+     * Creates a background thread for main to call, specifies which
+     */
 
     /**
      * Pause any active cameras
