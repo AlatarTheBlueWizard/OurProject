@@ -32,6 +32,8 @@ import android.widget.Toast;
  * and file saving. Here we will control which camera is active, rear or front
  * facing. Also, for later milestones, this class will automatically flip the
  * camera from rear to front (e.g. close one camera and open the other)
+ * Important: only one camera will be active at a time, taking up memory.
+ * One is active, the other is null
  */
 public class ManageCameras {
     // Camera Manager Object
@@ -39,6 +41,9 @@ public class ManageCameras {
     // TWO CAMERA OBJECTS
     Camera cam1; // Rear facing
     Camera cam2; // Front facing
+    // Boolean representing whether the rear camera is or should be on
+    // This variable is used to determine which camera to operate on in the StateCallBack
+    boolean isRearGroupPic;
 
     // ManageCameras contains a Weak Reference to whatever activity creates an object of it and
     // uses it
@@ -56,56 +61,9 @@ public class ManageCameras {
     private CaptureRequest.Builder buildCapRequest;
     // State Callback object to receive updates about the camera's state
     // Returns a camera device to set up the specific camera device
-    private CameraDevice.StateCallback cameraStateCallback = new CameraDevice.StateCallback() {
-
-        /**
-         * Method called when specific camera device has called CameraDevice.close()
-         * @param camera
-         */
-        @Override
-        public void onClosed(@NonNull CameraDevice camera) {
-            if (cam1.getCameraDevice() != null) {
-                // Close our camera
-                cam1.closeCamera();
-            }
-        }
-
-        /**
-         * Method to be called when specific camera device has finished opening
-         * @param camera
-         */
-        @Override
-        public void onOpened(@NonNull CameraDevice camera) {
-            // Set our camera to the one returned from the state call back
-            // Not final yet, need to determine rear or front, will do later
-            cam1.setCameraDevice(camera);
-        }
-
-        /**
-         * Method to be called when specific camera device is no longer available to be used
-         * @param camera
-         */
-        @Override
-        public void onDisconnected(@NonNull CameraDevice camera) {
-            // Close camera and set our camera object keeping track of the camera device object
-            // to null
-            camera.close();
-            cam1.setCameraDevice(null);
-        }
-
-        /**
-         * Method to be called when camera device has a fatal error
-         * @param camera
-         * @param error
-         */
-        @Override
-        public void onError(@NonNull CameraDevice camera, int error) {
-            // Close camera and set our camera object keeping track of the camera device object
-            // to null
-            camera.close();
-            cam1.setCameraDevice(null);
-        }
-    }; // End state call back declaration
+    // The state callback will be used in connectCameras() when passed to openCamera()
+    // Created in openCamera()
+    private CameraDevice.StateCallback cameraStateCallback;
     // Camera Characteristics for the certain camera
     private CameraCharacteristics cameraCharacteristics;
 
@@ -132,22 +90,149 @@ public class ManageCameras {
         // OR WE COULD START OUR CAMERAS AT NULL... setup cameras will create the cameras
         cam1 = new Camera(true);
         cam2 = new Camera(false);
+        // Set isRearGroupPic to false by default
+        isRearGroupPic = false;
     }
 
     /**
-     * Opens a camera
-     * @param isRear denotes which camera to open
+     * Opens a camera. Receives a boolean to determine through which camera
+     * state call back and connectCamera() will work with
+     * @param isRearGroupPic denotes which camera to open
      * @return returns a string representing the camera's id which was open
      */
-    String open(boolean isRear) {
+    String open(boolean isRearGroupPic) {
+        // Set our member to received boolean
+        this.isRearGroupPic = isRearGroupPic;
+
         // If is rear is true, open up rear camera (#1)
-        if (isRear) {
-            // Call its open method
-            cam1.openCamera();
+        if (this.isRearGroupPic) {
+            // Create state callback using cam1
+            cameraStateCallback = new CameraDevice.StateCallback() {
+
+                /**
+                 * Method called when specific camera device has called CameraDevice.close()
+                 * @param camera
+                 */
+                @Override
+                public void onClosed(@NonNull CameraDevice camera) {
+                    if (cam1.getCameraDevice() != null) {
+                        // Close cam1
+                        cam1.closeCamera();
+                    }
+                }
+
+                /**
+                 * Method to be called when specific camera device has finished opening
+                 * @param camera
+                 */
+                @Override
+                public void onOpened(@NonNull CameraDevice camera) {
+                    // Set our camera to the one returned from the state call back
+                    // Not final yet, need to determine rear or front, will do later
+                    cam1.setCameraDevice(camera);
+                    if (cam1.getCameraDevice() != null) {
+                        // Toast it to see if its works
+                        Toast.makeText(activityWeakReference.get(), "Camera Set Correctly",
+                                Toast.LENGTH_SHORT);
+                    }
+                    // If camera is null, log the error
+                    else {
+                        Log.e(TAG, "Camera not set correctly in onOpened of stateCallBack");
+                    }
+                }
+
+                /**
+                 * Method to be called when specific camera device is no longer available to be used
+                 * @param camera
+                 */
+                @Override
+                public void onDisconnected(@NonNull CameraDevice camera) {
+                    // Close camera and set our camera object keeping track of the camera device object
+                    // to null
+                    camera.close();
+                    cam1.setCameraDevice(null);
+                }
+
+                /**
+                 * Method to be called when camera device has a fatal error
+                 * @param camera
+                 * @param error
+                 */
+                @Override
+                public void onError(@NonNull CameraDevice camera, int error) {
+                    // Close camera and set our camera object keeping track of the camera device object
+                    // to null
+                    camera.close();
+                    cam1.setCameraDevice(null);
+                }
+            };
+            
+            // Call connect cameras
+            connectCameras(isRearGroupPic);
             return cam1.getCameraId(); // Return its ID
-        }
+        } // End if isRearGroupPic
         // Rear is false, open up front facing camera (#2)
         else {
+            // Create state callback using cam2
+            cameraStateCallback = new CameraDevice.StateCallback() {
+
+                /**
+                 * Method called when specific camera device has called CameraDevice.close()
+                 * @param camera
+                 */
+                @Override
+                public void onClosed(@NonNull CameraDevice camera) {
+                    if (cam2.getCameraDevice() != null) {
+                        // Close cam1
+                        cam2.closeCamera();
+                    }
+                }
+
+                /**
+                 * Method to be called when specific camera device has finished opening
+                 * @param camera
+                 */
+                @Override
+                public void onOpened(@NonNull CameraDevice camera) {
+                    // Set our camera to the one returned from the state call back
+                    // Not final yet, need to determine rear or front, will do later
+                    cam2.setCameraDevice(camera);
+                    if (cam2.getCameraDevice() != null) {
+                        // Toast it to see if its works
+                        Toast.makeText(activityWeakReference.get(), "Camera Set Correctly",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                    // If camera is null, log the error
+                    else {
+                        Log.e(TAG, "Camera not set correctly in onOpened of stateCallBack");
+                    }
+                }
+
+                /**
+                 * Method to be called when specific camera device is no longer available to be used
+                 * @param camera
+                 */
+                @Override
+                public void onDisconnected(@NonNull CameraDevice camera) {
+                    // Close camera and set our camera object keeping track of the camera device object
+                    // to null
+                    camera.close();
+                    cam2.setCameraDevice(null);
+                }
+
+                /**
+                 * Method to be called when camera device has a fatal error
+                 * @param camera
+                 * @param error
+                 */
+                @Override
+                public void onError(@NonNull CameraDevice camera, int error) {
+                    // Close camera and set our camera object keeping track of the camera device object
+                    // to null
+                    camera.close();
+                    cam2.setCameraDevice(null);
+                }
+            };
             // Call its open method
             cam2.openCamera();
             return cam2.getCameraId(); // Return its ID
@@ -218,7 +303,7 @@ public class ManageCameras {
      * setupCameras() allocates our cameraManager object to equal
      * context.getSystemService(Context.CAMERA_SERVICE);
      */
-    void connectCameras() {
+    void connectCamera(boolean isRearGroupPic) {
         // Try to connect, throw if something goes wrong
         try {
             // Make sure camera manager is not null
