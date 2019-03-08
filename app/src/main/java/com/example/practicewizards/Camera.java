@@ -20,6 +20,16 @@ public class Camera {
     private String cameraId;
     // Camera object
     public CameraDevice cameraDevice;
+    // Boolean representing whether camera is rear or front facing
+    private boolean isRearCamera;
+
+    public boolean isRearCamera() {
+        return isRearCamera;
+    }
+
+    public void setRearCamera(boolean rearCamera) {
+        isRearCamera = rearCamera;
+    }
 
     /**
      * Getter for current camera id
@@ -61,12 +71,13 @@ public class Camera {
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public Camera(boolean isRear) {
         if (isRear) {
-            // Construct camera using rear facing view
+            // Set member
+            isRearCamera = true;
         }
         else {
-            // Construct camera using front facing view
+            // Set member
+            isRearCamera = false;
         }
-
         // Set id to default
         cameraId = null;
     }
