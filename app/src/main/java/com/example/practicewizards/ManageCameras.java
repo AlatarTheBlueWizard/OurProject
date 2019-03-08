@@ -32,6 +32,8 @@ import android.widget.Toast;
  * and file saving. Here we will control which camera is active, rear or front
  * facing. Also, for later milestones, this class will automatically flip the
  * camera from rear to front (e.g. close one camera and open the other)
+ * Important: only one camera will be active at a time, taking up memory.
+ * One is active, the other is null
  */
 public class ManageCameras {
     // Camera Manager Object
@@ -56,56 +58,9 @@ public class ManageCameras {
     private CaptureRequest.Builder buildCapRequest;
     // State Callback object to receive updates about the camera's state
     // Returns a camera device to set up the specific camera device
-    private CameraDevice.StateCallback cameraStateCallback = new CameraDevice.StateCallback() {
-
-        /**
-         * Method called when specific camera device has called CameraDevice.close()
-         * @param camera
-         */
-        @Override
-        public void onClosed(@NonNull CameraDevice camera) {
-            if (cam1.getCameraDevice() != null) {
-                // Close our camera
-                cam1.closeCamera();
-            }
-        }
-
-        /**
-         * Method to be called when specific camera device has finished opening
-         * @param camera
-         */
-        @Override
-        public void onOpened(@NonNull CameraDevice camera) {
-            // Set our camera to the one returned from the state call back
-            // Not final yet, need to determine rear or front, will do later
-            cam1.setCameraDevice(camera);
-        }
-
-        /**
-         * Method to be called when specific camera device is no longer available to be used
-         * @param camera
-         */
-        @Override
-        public void onDisconnected(@NonNull CameraDevice camera) {
-            // Close camera and set our camera object keeping track of the camera device object
-            // to null
-            camera.close();
-            cam1.setCameraDevice(null);
-        }
-
-        /**
-         * Method to be called when camera device has a fatal error
-         * @param camera
-         * @param error
-         */
-        @Override
-        public void onError(@NonNull CameraDevice camera, int error) {
-            // Close camera and set our camera object keeping track of the camera device object
-            // to null
-            camera.close();
-            cam1.setCameraDevice(null);
-        }
-    }; // End state call back declaration
+    // The state callback will be used in connectCameras() when passed to openCamera()
+    // Created in openCamera()
+    private CameraDevice.StateCallback cameraStateCallback;
     // Camera Characteristics for the certain camera
     private CameraCharacteristics cameraCharacteristics;
 
@@ -114,8 +69,8 @@ public class ManageCameras {
 
     // Background Handler
     private Handler backgroundHandler;      // For handling threads
-    // Background Thread
-    private HandlerThread backgroundThread; // The specific background thread, runnable
+    // Background Handler Thread
+    private HandlerThread backgroundHandlerThread; // The specific background thread, runnable
 
     // Size of image
     private Size imageSize;
@@ -135,21 +90,145 @@ public class ManageCameras {
     }
 
     /**
-     * Opens a camera
-     * @param isRear denotes which camera to open
+     * Opens a camera. Receives a boolean to determine through which camera
+     * state call back and connectCamera() will work with
+     * @param isRearGroupPic denotes which camera to open
      * @return returns a string representing the camera's id which was open
      */
-    String open(boolean isRear) {
+    String open(boolean isRearGroupPic) {
         // If is rear is true, open up rear camera (#1)
-        if (isRear) {
-            // Call its open method
-            cam1.openCamera();
+        if (isRearGroupPic) {
+            // Create state callback using cam1
+            cameraStateCallback = new CameraDevice.StateCallback() {
+
+                /**
+                 * Method called when specific camera device has called CameraDevice.close()
+                 * @param camera
+                 */
+                @Override
+                public void onClosed(@NonNull CameraDevice camera) {
+                    if (cam1.getCameraDevice() != null) {
+                        // Close cam1
+                        cam1.closeCamera();
+                    }
+                }
+
+                /**
+                 * Method to be called when specific camera device has finished opening
+                 * @param camera
+                 */
+                @Override
+                public void onOpened(@NonNull CameraDevice camera) {
+                    // Set our camera to the one returned from the state call back
+                    // Not final yet, need to determine rear or front, will do later
+                    cam1.setCameraDevice(camera);
+                    if (cam1.getCameraDevice() != null) {
+                        // Toast it to see if its works
+                        Toast.makeText(activityWeakReference.get(), "Camera Set Correctly",
+                                Toast.LENGTH_SHORT);
+                    }
+                    // If camera is null, log the error
+                    else {
+                        Log.e(TAG, "Camera not set correctly in onOpened of stateCallBack");
+                    }
+                }
+
+                /**
+                 * Method to be called when specific camera device is no longer available to be used
+                 * @param camera
+                 */
+                @Override
+                public void onDisconnected(@NonNull CameraDevice camera) {
+                    // Close camera and set our camera object keeping track of the camera device object
+                    // to null
+                    camera.close();
+                    cam1.setCameraDevice(null);
+                }
+
+                /**
+                 * Method to be called when camera device has a fatal error
+                 * @param camera
+                 * @param error
+                 */
+                @Override
+                public void onError(@NonNull CameraDevice camera, int error) {
+                    // Close camera and set our camera object keeping track of the camera device object
+                    // to null
+                    camera.close();
+                    cam1.setCameraDevice(null);
+                }
+            };
+
+            // Call connect cameras
+            // Its true that we are using rear group pic
+            connectCamera(true);
             return cam1.getCameraId(); // Return its ID
-        }
+        } // End if isRearGroupPic
         // Rear is false, open up front facing camera (#2)
         else {
-            // Call its open method
-            cam2.openCamera();
+            // Create state callback using cam2
+            cameraStateCallback = new CameraDevice.StateCallback() {
+
+                /**
+                 * Method called when specific camera device has called CameraDevice.close()
+                 * @param camera
+                 */
+                @Override
+                public void onClosed(@NonNull CameraDevice camera) {
+                    if (cam2.getCameraDevice() != null) {
+                        // Close cam1
+                        cam2.closeCamera();
+                    }
+                }
+
+                /**
+                 * Method to be called when specific camera device has finished opening
+                 * @param camera
+                 */
+                @Override
+                public void onOpened(@NonNull CameraDevice camera) {
+                    // Set our camera to the one returned from the state call back
+                    // Not final yet, need to determine rear or front, will do later
+                    cam2.setCameraDevice(camera);
+                    if (cam2.getCameraDevice() != null) {
+                        // Toast it to see if its works
+                        Toast.makeText(activityWeakReference.get(), "Camera Set Correctly",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                    // If camera is null, log the error
+                    else {
+                        Log.e(TAG, "Camera not set correctly in onOpened of stateCallBack");
+                    }
+                }
+
+                /**
+                 * Method to be called when specific camera device is no longer available to be used
+                 * @param camera
+                 */
+                @Override
+                public void onDisconnected(@NonNull CameraDevice camera) {
+                    // Close camera and set our camera object keeping track of the camera device object
+                    // to null
+                    camera.close();
+                    cam2.setCameraDevice(null);
+                }
+
+                /**
+                 * Method to be called when camera device has a fatal error
+                 * @param camera
+                 * @param error
+                 */
+                @Override
+                public void onError(@NonNull CameraDevice camera, int error) {
+                    // Close camera and set our camera object keeping track of the camera device object
+                    // to null
+                    camera.close();
+                    cam2.setCameraDevice(null);
+                }
+            };
+            // Call connect cameras
+            // Its false that we are using rear group pic
+            connectCamera(false);
             return cam2.getCameraId(); // Return its ID
         }
     }
@@ -158,6 +237,7 @@ public class ManageCameras {
      * Sets up the rear facing camera and the front facing camera
      * This function will get the front facing cameraId and the rear facing cameraId
      * and set cam1 and cam2 Id's
+     * This method simply finds both camera Ids on the given device
      * @param width EXPLAIN THIS BENJAMIN
      * @param height Explain
      * @param context Needed for getting the system service of that context, in our
@@ -186,11 +266,13 @@ public class ManageCameras {
                     if (cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) ==
                             CameraCharacteristics.LENS_FACING_BACK) {
                         cam1.setCameraId(cameraId); // CHANGE THIS
+                        Log.d(TAG, "Rear Camera Id set");
                     }
                     // Check for front facing lens
                     else if (cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) ==
                              CameraCharacteristics.LENS_FACING_FRONT) {
                         cam2.setCameraId(cameraId); // CHANGE THIS
+                        Log.d(TAG, "Front Camera Id set");
                     }
                     // Check if both cameraId's for front and back were found
                     if (cam1.getCameraId() != null && cam2.getCameraId() != null) {
@@ -218,69 +300,136 @@ public class ManageCameras {
      * setupCameras() allocates our cameraManager object to equal
      * context.getSystemService(Context.CAMERA_SERVICE);
      */
-    void connectCameras() {
+    void connectCamera(boolean isRearGroupPic) {
         // Try to connect, throw if something goes wrong
         try {
+
             // Make sure camera manager is not null
             if (cameraManager != null) {
-                // Try to open camera, could through CameraAccessException
-                try {
-                    // Preceding call requires a minimum API level, check through IF statement
-                    // See if sdk_int is >= 23 (Marshmallow Api Level)
-                    // Prompt user to grant or deny permission to use Marshmallow API on their specific
-                    // Device. This occurs once, during installation and first run-through of the app
-                    // If the user grants permission, then else is always run, if not then hopefully
-                    // user will grant because they can't use our app if not!
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        // Check permissions using weakReference's compat activity through get()
-                        // giving it the Manifest camera permissions static variable
-                        // If true, then permission has been granted through package manager variable
-                        if (ContextCompat.checkSelfPermission(activityWeakReference.get(),
-                                Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+
+                // If isRearGroupPic is true, open cam1
+                if (isRearGroupPic) {
+                    // Try to open camera, could through CameraAccessException
+                    try {
+                        // See if sdk_int is >= 23 (Marshmallow Api Level)
+                        // IF SO, we need permissions to call openCamera. If not, we can call it
+                        // without permission!
+                        // Prompt user to grant or deny permission to use Marshmallow API on their specific
+                        // Device. This occurs once, during installation and first run-through of the app
+                        // If the user grants permission, then else is always run, if not then hopefully
+                        // user will grant because they can't use our app if not!
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            // Check permissions using weakReference's compat activity through get()
+                            // giving it the Manifest camera permissions static variable
+                            // If true, then permission has been granted through package manager variable
+                            if (ContextCompat.checkSelfPermission(activityWeakReference.get(),
+                                    Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                                // Open camera through camera id, the stateCallBack, and our created
+                                // backgroundHandler
+                                cameraManager.openCamera(cam1.getCameraId(), cameraStateCallback,
+                                        backgroundHandler);
+                            }
+                            // Else ask for permissions
+                            else {
+                                // If user denied permissions once (at installation) but still wants to
+                                // run our app, ask again (diligence never fails!)
+                                // Call fancy show request permission through whatever reference we're
+                                // Using. Give it Manifest Camera Permission variable
+                                if (activityWeakReference.get().
+                                        shouldShowRequestPermissionRationale(
+                                                Manifest.permission.CAMERA)) {
+                                    // Make a simple toast, could do something different if we choose to
+                                    Toast.makeText(activityWeakReference.get(),
+                                            "App requires access to back and front cameras",
+                                            Toast.LENGTH_LONG).show();
+                                }
+                                // Now actually request the permissions through reference
+                                activityWeakReference.get().requestPermissions(
+                                        new String[] {Manifest.permission.CAMERA},
+                                        REQUEST_CAMERA_PERMISSION_RESULT);
+
+                            }
+                        } // End sdk_int check
+                        // Else simply call open camera through cameraManager
+                        else {
                             // Open camera through camera id, the stateCallBack, and our created
                             // backgroundHandler
                             cameraManager.openCamera(cam1.getCameraId(), cameraStateCallback,
                                     backgroundHandler);
                         }
-                        // Else ask for permissions
-                        else {
-                            // If user denied permissions once (at installation) but still wants to
-                            // run our app, ask again (diligence never fails!)
-                            // Call fancy show request permission through whatever reference we're
-                            // Using. Give it Manifest Camera Permission variable
-                            if (activityWeakReference.get().
-                                    shouldShowRequestPermissionRationale(
-                                            Manifest.permission.CAMERA)) {
-                                // Make a simple toast, could do something different if we choose to
-                                Toast.makeText(activityWeakReference.get(),
-                                        "App requires access to back and front cameras",
-                                        Toast.LENGTH_LONG).show();
-                            }
-                            // Now actually request the permissions through reference
-                            activityWeakReference.get().requestPermissions(
-                                    new String[] {Manifest.permission.CAMERA},
-                                    REQUEST_CAMERA_PERMISSION_RESULT);
+                    }
+                    // Catch camera access exception for camera 1
+                    catch (CameraAccessException camAccessExcept) {
+                        Log.e(TAG, "ERROR accessing camera 1 in connectCameras()"); // Error msg.
+                        camAccessExcept.printStackTrace(); // Print Stack
+                    }
+                } // End if for isRearGroupPic
 
+                // Else open up front facing camera (Cam2), isRearGroupPic is false
+                else {
+                    // Try to open camera, could through CameraAccessException
+                    try {
+                        // See if sdk_int is >= 23 (Marshmallow Api Level)
+                        // IF SO, we need permissions to call openCamera. If not, we can call it
+                        // without permission!
+                        // Prompt user to grant or deny permission to use Marshmallow API on their specific
+                        // Device. This occurs once, during installation and first run-through of the app
+                        // If the user grants permission, then else is always run, if not then hopefully
+                        // user will grant because they can't use our app if not!
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            // Check permissions using weakReference's compat activity through get()
+                            // giving it the Manifest camera permissions static variable
+                            // If true, then permission has been granted through package manager variable
+                            if (ContextCompat.checkSelfPermission(activityWeakReference.get(),
+                                    Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                                // Open camera through camera id, the stateCallBack, and our created
+                                // backgroundHandler
+                                cameraManager.openCamera(cam2.getCameraId(), cameraStateCallback,
+                                        backgroundHandler);
+                            }
+                            // Else ask for permissions
+                            else {
+                                // If user denied permissions once (at installation) but still wants to
+                                // run our app, ask again (diligence never fails!)
+                                // Call fancy show request permission through whatever reference we're
+                                // Using. Give it Manifest Camera Permission variable
+                                if (activityWeakReference.get().
+                                        shouldShowRequestPermissionRationale(
+                                                Manifest.permission.CAMERA)) {
+                                    // Make a simple toast, could do something different if we choose to
+                                    Toast.makeText(activityWeakReference.get(),
+                                            "App requires access to back and front cameras",
+                                            Toast.LENGTH_LONG).show();
+                                }
+                                // Now actually request the permissions through reference
+                                activityWeakReference.get().requestPermissions(
+                                        new String[] {Manifest.permission.CAMERA},
+                                        REQUEST_CAMERA_PERMISSION_RESULT);
+
+                            } // End else
+                        } // End sdk_int check
+                        // Else simply call open camera through cameraManager
+                        else {
+                            // Open camera through camera id, the stateCallBack, and our created
+                            // backgroundHandler
+                            cameraManager.openCamera(cam2.getCameraId(), cameraStateCallback,
+                                    backgroundHandler);
                         }
                     }
-                    // Else simply call open camera through cameraManager
-                    else {
-                        // Open camera through camera id, the stateCallBack, and our created
-                        // backgroundHandler
-                        cameraManager.openCamera(cam1.getCameraId(), cameraStateCallback,
-                                backgroundHandler);
+                    // Catch camera access exception for camera 2
+                    catch (CameraAccessException camAccessExcept) {
+                        Log.e(TAG, "ERROR accessing camera 2 in connectCameras()"); // Error msg.
+                        camAccessExcept.printStackTrace(); // Print Stack
                     }
-                }
-                // Catch camera access exception
-                catch (CameraAccessException camAccessExcep) {
-                    Log.e(TAG, "ERROR accessing camera in connectCameras()"); // Error msg.
-                    camAccessExcep.printStackTrace(); // Print Stack
-                }
-            }
+                } // End else isRearGroupPic is false
+            } // End if CamManager is null
             else { // Camera Manager is null
+                // Throw a null pointer exception with ManageCameras.java signature
+                // This will be thrown if Manage cameras is null (e.g. setupCameras() was not
+                // called)
                 throw new NullPointerException("MangeCameras.java");
             }
-        }
+        } // End try block
         // Catch if Camera Manager is null
         catch (NullPointerException nullPtr) {
             Log.e(TAG, "Camera Manager is null");
@@ -374,11 +523,38 @@ public class ManageCameras {
     }
 
     /**
-     * Creates a background thread for main to call, specifies which
+     * Creates a background thread for methods in ManageCameras to call
+     * We don't want and we can't have the cameras opening and running on the UIThread
      */
+    private void startBackgroundThread() {
+        // Create our HandlerThread
+        backgroundHandlerThread = new HandlerThread("ManageCameras.java");
+        // Start HandlerThread
+        backgroundHandlerThread.start();
+        // Create a new Handler with HandlerThread created. Call getLooper() EXPLAIN
+        backgroundHandler = new Handler(backgroundHandlerThread.getLooper());
+    }
+
+    /**
+     * Stops the current thread when needed in onPause() onStop() onDestroy() and other methods
+     */
+    private void stopBackgroundThread() {
+        backgroundHandlerThread.quitSafely(); // EXPLAIN
+        // Block other threads from interrupting us from stopping background thread
+        // so we can clean up safely and efficiently without any bother from other application
+        // threads
+        // Try to join, may through interrupted exception
+        try {
+            backgroundHandlerThread.join();
+        } catch (InterruptedException e) {
+            Log.e(TAG, "ERROR: Join Interrupted");
+            e.printStackTrace();
+        }
+    }
 
     /**
      * Pause any active cameras
+     * To be called from View (Main)
      */
     void pause() {
         // Only one camera should be open at a time, check which one may be open
@@ -402,14 +578,26 @@ public class ManageCameras {
         return cam1;
     }
 
+    /**
+     *
+     * @param cam1
+     */
     public void setRear(Camera cam1) {
         this.cam1 = cam1;
     }
 
+    /**
+     *
+     * @return
+     */
     public Camera getFront() {
         return cam2;
     }
 
+    /**
+     *
+     * @param cam2
+     */
     public void setFront(Camera cam2) {
         this.cam2 = cam2;
     }
