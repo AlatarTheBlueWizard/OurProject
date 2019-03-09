@@ -13,6 +13,7 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
+import android.media.ImageReader;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,6 +23,7 @@ import android.os.HandlerThread;
 import android.provider.MediaStore;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
@@ -84,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    //FUNCTIONS MEMBER VARIABLES
     private HandlerThread groupBackgroundHandlerThread;
     private Handler groupBackgroundHandler;
     private String groupCameraDeviceId; // for setup of the camera
@@ -161,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
                 if(cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT) {
                     continue;
                 }
-                groupCameraDeviceId = cameraId;
+                groupCameraDeviceId = cameraId; //create a parameter for this
                 return;
             }
         } catch (CameraAccessException e) {
