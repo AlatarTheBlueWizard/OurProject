@@ -14,6 +14,7 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.media.ImageReader;
+import android.media.ImageReader;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,6 +29,7 @@ import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -35,11 +37,15 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
+    private File mPhotoFolder;
+    private String mPhotoFileName;
     private static final int CAMERA_REQUEST=1888;
     ImageView myImage;
     private static int REQUEST_CAMERA_PERMISSION_RESULT = 0;
+    private static int REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_RESULT = 1;
     private TextureView groupView;
     private TextureView.SurfaceTextureListener groupTextListener = new TextureView.SurfaceTextureListener() {
         @Override
@@ -70,7 +76,11 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onOpened(CameraDevice camera) {
             groupCameraDevice = camera;
-            startPreview();
+            try {
+                startPic();
+            } catch (CameraAccessException e) {
+                e.printStackTrace();
+            }
         }
 
         @Override
@@ -90,6 +100,16 @@ public class MainActivity extends AppCompatActivity {
     private HandlerThread groupBackgroundHandlerThread;
     private Handler groupBackgroundHandler;
     private String groupCameraDeviceId; // for setup of the camera
+    private Size mPhotoSize;
+    private Size mPreviewSize;
+    private ImageReader mImageReader;
+    private final ImageReader.OnImageAvailableListener mOnImageAvailableListener = new
+            ImageReader.OnImageAvailableListener() {
+                @Override
+                public void onImageAvailable(ImageReader reader) {
+
+                }
+            };
     private CaptureRequest.Builder groupCaptureRequestBuilder;
     private static SparseIntArray ORIENTATIONS = new SparseIntArray();
     static {
@@ -99,14 +119,26 @@ public class MainActivity extends AppCompatActivity {
         ORIENTATIONS.append(Surface.ROTATION_270, 270);
     }
 
-
+    private TextureView mTextureView;
+    private Button mTakeImageButton;
+    private boolean mIsTaken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        createPhotoFolder();
+        try {
+            createPhotoFileName();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         groupView = (TextureView)findViewById(R.id.groupView);
+
+        mTextureView = (TextureView) findViewById(R.id.groupView);
+        mTakeImageButton = (Button) findViewById(R.id.btn_takeGroup);
     }
 
     public void startSelfieActivity(View view) {
@@ -196,34 +228,31 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void startPreview(){
+    private void startPic() throws CameraAccessException {
         SurfaceTexture surfaceTexture = groupView.getSurfaceTexture();
         surfaceTexture.setDefaultBufferSize(groupView.getWidth(), groupView.getHeight());
         Surface previewSurface = new Surface(surfaceTexture);
+        groupCaptureRequestBuilder = groupCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+        groupCaptureRequestBuilder.addTarget(previewSurface);
 
-        try {
-            groupCaptureRequestBuilder = groupCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            groupCaptureRequestBuilder.addTarget(previewSurface);
-
-            groupCameraDevice.createCaptureSession(Arrays.asList(previewSurface), new CameraCaptureSession.StateCallback() {
-                @Override
-                public void onConfigured(CameraCaptureSession session) {
-                    try {
-                        session.setRepeatingRequest(groupCaptureRequestBuilder.build(), null, groupBackgroundHandler);
-                    } catch (CameraAccessException e) {
-                        e.printStackTrace();
+        groupCameraDevice.createCaptureSession(Arrays.asList(previewSurface),
+                new CameraCaptureSession.StateCallback() {
+                    @Override
+                    public void onConfigured(CameraCaptureSession session) {
+                        try {
+                            session.setRepeatingRequest(
+                                    groupCaptureRequestBuilder.build(), null, null
+                            );
+                        } catch (CameraAccessException e) {
+                            e.printStackTrace();
+                        }
                     }
-                }
 
-                @Override
-                public void onConfigureFailed(CameraCaptureSession session) {
-                    Toast.makeText(getApplicationContext(), "Unable to setup camera preview", Toast.LENGTH_LONG).show();
-                }
-            }, null);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
+                    @Override
+                    public void onConfigureFailed(CameraCaptureSession session) {
 
+                    }
+                }, null);
     }
 
     private void closeCamera() {
@@ -256,7 +285,7 @@ public class MainActivity extends AppCompatActivity {
         return (sensorOrientation + deviceOrientation + 360) % 360;
     }
 
-    public void takePicture() {
+    public void takePicture() throws IOException {
         Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         startActivityForResult(i, CAMERA_REQUEST);
     }
@@ -276,23 +305,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    //creates the image file with date format
-    public static File createImageFile() throws IOException {
-        //create image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis());
-        File storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/Camera/");
-        if(!storageDir.exists())
-            storageDir.mkdirs();
-        File image = File.createTempFile(timeStamp, ".jpeg", storageDir);
-        return image;
+    private void createPhotoFolder() {
+        File imageFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        mPhotoFolder = new File(imageFile, "CameraImages");
+        if(!mPhotoFolder.exists()) {
+            mPhotoFolder.mkdirs();
+        }
     }
 
-    //Saves the picture to the gallery
-    public static void addPicToGallery(Context context, String photoPath) {
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        File f = new File(photoPath);
-        Uri contentUri = Uri.fromFile(f);
-        mediaScanIntent.setData(contentUri);
-        context.sendBroadcast(mediaScanIntent);
+    private File createPhotoFileName()throws IOException {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String prepend = "PHOTO_" + timeStamp + "_";
+        File photoFile = File.createTempFile(prepend, ".jpg", mPhotoFolder);
+        mPhotoFileName = photoFile.getAbsolutePath();
+        return photoFile;
     }
 }

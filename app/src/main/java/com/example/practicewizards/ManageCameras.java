@@ -82,11 +82,13 @@ public class ManageCameras {
     /**
      * Non-default Constructor for ManageCameras to be called from main in the onCreate() method
      */
-    ManageCameras() {
+    ManageCameras(WeakReference<AppCompatActivity> main) {
         // Create our two cameras, one for rear, one for front facing
         // OR WE COULD START OUR CAMERAS AT NULL... setup cameras will create the cameras
         cam1 = new Camera(true);
         cam2 = new Camera(false);
+        // Set weak reference to our member
+        activityWeakReference = main;
     }
 
     /**
@@ -301,6 +303,8 @@ public class ManageCameras {
      * context.getSystemService(Context.CAMERA_SERVICE);
      */
     void connectCamera(boolean isRearGroupPic) {
+        // Start Background Thread!!!
+
         // Try to connect, throw if something goes wrong
         try {
 
