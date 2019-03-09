@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
     private static SparseIntArray ORIENTATIONS = new SparseIntArray();
 
     // Image size
-    private Size imageSize = new Size(groupView.getWidth(), groupView.getHeight());
+    private Size imageSize;
     // Image reader
     private ImageReader imageReader;
     // Listener to listen for image capture
@@ -215,6 +215,7 @@ public class MainActivity extends AppCompatActivity {
                 if(cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT) {
                     continue;
                 }
+                imageSize = new Size(groupView.getWidth(), groupView.getHeight());
                 groupCameraDeviceId = cameraId; //create a parameter for this
                 return;
             }
