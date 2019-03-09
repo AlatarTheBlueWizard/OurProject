@@ -79,6 +79,38 @@ public class ManageCameras {
     // Tag for this class
     private static final String TAG = "ManageCameras";
 
+    public WeakReference<AppCompatActivity> getActivityWeakReference() {
+        return activityWeakReference;
+    }
+
+    public void setActivityWeakReference(WeakReference<AppCompatActivity> activityWeakReference) {
+        this.activityWeakReference = activityWeakReference;
+    }
+
+    public CameraCaptureSession getCameraCaptureSession() {
+        return cameraCaptureSession;
+    }
+
+    public void setCameraCaptureSession(CameraCaptureSession cameraCaptureSession) {
+        this.cameraCaptureSession = cameraCaptureSession;
+    }
+
+    public CaptureRequest getCaptureRequest() {
+        return captureRequest;
+    }
+
+    public void setCaptureRequest(CaptureRequest captureRequest) {
+        this.captureRequest = captureRequest;
+    }
+
+    public CaptureRequest.Builder getBuildCapRequest() {
+        return buildCapRequest;
+    }
+
+    public void setBuildCapRequest(CaptureRequest.Builder buildCapRequest) {
+        this.buildCapRequest = buildCapRequest;
+    }
+
     /**
      * Non-default Constructor for ManageCameras to be called from main in the onCreate() method
      */

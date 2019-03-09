@@ -13,6 +13,7 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
+import android.media.ImageReader;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,6 +23,8 @@ import android.os.HandlerThread;
 import android.provider.MediaStore;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
@@ -32,9 +35,12 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "GroupPhoto.java";
     private static final int CAMERA_REQUEST=1888;
     ImageView myImage;
     private static int REQUEST_CAMERA_PERMISSION_RESULT = 0;
@@ -89,6 +95,20 @@ public class MainActivity extends AppCompatActivity {
     private String groupCameraDeviceId; // for setup of the camera
     private CaptureRequest.Builder groupCaptureRequestBuilder;
     private static SparseIntArray ORIENTATIONS = new SparseIntArray();
+
+    // Image size
+    private Size imageSize = new Size(groupView.getWidth(), groupView.getHeight());
+    // Image reader
+    private ImageReader imageReader;
+    // Listener to listen for image capture
+    private final ImageReader.OnImageAvailableListener onImageAvailableListener = new
+            ImageReader.OnImageAvailableListener() {
+                @Override
+                public void onImageAvailable(ImageReader reader) {
+
+                }
+            };
+
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 0);
         ORIENTATIONS.append(Surface.ROTATION_90, 90);
@@ -253,7 +273,30 @@ public class MainActivity extends AppCompatActivity {
         return (sensorOrientation + deviceOrientation + 360) % 360;
     }
 
+    /**
+     * Creates a still capture
+     */
+    private void startStillCapture() {
+        try {
+            // Use the still capture template for our capture request
+            groupCaptureRequestBuilder =
+                    groupCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            groupCaptureRequestBuilder.addTarget(imageReader.getSurface());
+        }
+        catch (CameraAccessException camAccessExcept) {
+            Log.e(TAG, "Error accessing camera");
+            camAccessExcept.printStackTrace();
+        }
+    }
+
     public void takePicture() {
+        try {
+            CaptureRequest.Builder captureRequestBuilder =
+                    groupCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
         Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         startActivityForResult(i, CAMERA_REQUEST);
     }
