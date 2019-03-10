@@ -150,10 +150,16 @@ public class MainActivity extends AppCompatActivity {
             // Now put bytes into file
             FileOutputStream fileOutputStream = null;
             try {
+                createPhotoFolder();
                 fileOutputStream = new FileOutputStream(createPhotoFileName()); // open file
+                Toast.makeText(getApplicationContext(), "File Output Stream Created",
+                        Toast.LENGTH_SHORT).show();
                 fileOutputStream.write(bytes); // Write the bytes to the file
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (NullPointerException nullPtr) {
+                Log.e(TAG, "Null something");
+                nullPtr.printStackTrace();
             }
             finally {
                 // Close image
@@ -475,18 +481,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void createPhotoFolder() {
+        Toast.makeText(getApplicationContext(), "Create Photo Folder called", Toast.LENGTH_SHORT)
+                .show();
         File imageFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        Toast.makeText(getApplicationContext(), "get external storage", Toast.LENGTH_SHORT)
+                .show();
         mPhotoFolder = new File(imageFile, "CameraImages");
+        Toast.makeText(getApplicationContext(), "photo folder created", Toast.LENGTH_SHORT)
+                .show();
         if(!mPhotoFolder.exists()) {
             mPhotoFolder.mkdirs();
+            Toast.makeText(getApplicationContext(), "Mkdir", Toast.LENGTH_SHORT)
+                    .show();
         }
     }
 
-    private File createPhotoFileName()throws IOException {
+    private String createPhotoFileName()throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String prepend = "PHOTO_" + timeStamp + "_";
-        File photoFile = File.createTempFile(prepend, ".jpg", mPhotoFolder);
+        File photoFile = File.createTempFile(prepend, ".jpeg", mPhotoFolder);
         mPhotoFileName = photoFile.getAbsolutePath();
-        return photoFile;
+        return photoFile.getAbsolutePath();
     }
 }
