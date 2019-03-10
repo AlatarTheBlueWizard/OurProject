@@ -16,6 +16,7 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
+import android.media.Image;
 import android.media.ImageReader;
 import android.media.ImageReader;
 import android.net.Uri;
@@ -39,7 +40,10 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -122,9 +126,49 @@ public class MainActivity extends AppCompatActivity {
             ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
-
+                    // Call our runnable to save photo to storage
+                    // Post to the handler the latest image reader
+                    groupBackgroundHandler.post(new ImageSaver(reader.acquireLatestImage()));
                 }
             };
+
+    // Nested runnable class
+    private class ImageSaver implements Runnable {
+        private final Image image;
+
+        public ImageSaver(Image image) {
+            this.image = image;
+        }
+        @Override
+        public void run() {
+            ByteBuffer byteBuffer = image.getPlanes()[0].getBuffer();
+            // Remaining bytes
+            byte[] bytes = new byte[byteBuffer.remaining()];
+            // Call get to retrieve all the bytes representing the image data
+            byteBuffer.get(bytes);
+            // Now put bytes into file
+            FileOutputStream fileOutputStream = null;
+            try {
+                fileOutputStream = new FileOutputStream(mPhotoFileName); // open file
+                fileOutputStream.write(bytes); // Write the bytes to the file
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            finally {
+                // Close image
+                Log.e(TAG, "WAHOO");
+                image.close();
+                if (fileOutputStream != null) {
+                    try {
+                        fileOutputStream.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+    }
+
     private CameraCaptureSession previewCaptureSession;
     private CameraCaptureSession.CaptureCallback previewCaptureCallback = new
             CameraCaptureSession.CaptureCallback() {
@@ -145,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
                                 afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
                                 Toast.makeText(getApplicationContext(), "AF LOCKED!",
                                         Toast.LENGTH_SHORT).show();
+                                startStillCapture();
                             }
                             break;
                         }
@@ -380,6 +425,24 @@ public class MainActivity extends AppCompatActivity {
             groupCaptureRequestBuilder =
                     groupCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             groupCaptureRequestBuilder.addTarget(imageReader.getSurface());
+            groupCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, 90);
+
+            CameraCaptureSession.CaptureCallback stillCaptureCallback = new
+                    CameraCaptureSession.CaptureCallback() {
+                        @Override
+                        public void onCaptureStarted(@NonNull CameraCaptureSession session,
+                                                     @NonNull CaptureRequest request,
+                                                     long timestamp, long frameNumber) {
+                            super.onCaptureStarted(session, request, timestamp, frameNumber);
+                            try {
+                                createPhotoFileName();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    };
+            previewCaptureSession.capture(groupCaptureRequestBuilder.build(), stillCaptureCallback,
+                    null); // Already on the background thread, give thread null
         }
         catch (CameraAccessException camAccessExcept) {
             Log.e(TAG, "Error accessing camera");
