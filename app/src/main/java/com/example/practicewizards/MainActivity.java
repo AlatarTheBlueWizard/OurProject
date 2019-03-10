@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -14,6 +15,8 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.CaptureResult;
+import android.hardware.camera2.TotalCaptureResult;
 import android.media.ImageReader;
 import android.media.ImageReader;
 import android.net.Uri;
@@ -43,6 +46,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Date;
+import android.support.annotation.NonNull;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "GroupPhoto.java";
@@ -52,6 +56,12 @@ public class MainActivity extends AppCompatActivity {
     ImageView myImage;
     private static int REQUEST_CAMERA_PERMISSION_RESULT = 0;
     private static int REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_RESULT = 1;
+    // State members
+    private static final int STATE_PREVIEW = 0;
+    private static final int STATE_WAIT_LOCK = 1;
+    // Hold the state
+    private int captureState = STATE_PREVIEW;
+
     private TextureView groupView;
     private TextureView.SurfaceTextureListener groupTextListener = new TextureView.SurfaceTextureListener() {
         @Override
@@ -116,6 +126,40 @@ public class MainActivity extends AppCompatActivity {
 
                 }
             };
+    private CameraCaptureSession previewCaptureSession;
+    private CameraCaptureSession.CaptureCallback previewCaptureCallback = new
+            CameraCaptureSession.CaptureCallback() {
+
+                private void process(CaptureResult captureResult) {
+                    switch (captureState) {
+                        case STATE_PREVIEW: {
+                            // Do nothing
+                            break;
+                        }
+                        case STATE_WAIT_LOCK: {
+                            // Set state back to preview to avoid taking tons of pics
+                            captureState = STATE_PREVIEW;
+                            // Integer for Auto Focus State
+                            Integer afState = captureResult.get(CaptureResult.CONTROL_AF_STATE);
+                            // SUPPORT new and old devices
+                            if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED ||
+                                afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
+                                Toast.makeText(getApplicationContext(), "AF LOCKED!",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                @Override
+                public void onCaptureCompleted(@NonNull CameraCaptureSession session,
+                                               @NonNull CaptureRequest request,
+                                               @NonNull TotalCaptureResult result) {
+                    super.onCaptureCompleted(session, request, result);
+                    process(result);
+                }
+            };
     private CaptureRequest.Builder groupCaptureRequestBuilder;
     private static SparseIntArray ORIENTATIONS = new SparseIntArray();
 
@@ -123,14 +167,6 @@ public class MainActivity extends AppCompatActivity {
     private Size imageSize;
     // Image reader
     private ImageReader imageReader;
-    // Listener to listen for image capture
-    private final ImageReader.OnImageAvailableListener onImageAvailableListener = new
-            ImageReader.OnImageAvailableListener() {
-                @Override
-                public void onImageAvailable(ImageReader reader) {
-
-                }
-            };
 
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 0);
@@ -160,6 +196,13 @@ public class MainActivity extends AppCompatActivity {
 
         mTextureView = (TextureView) findViewById(R.id.groupView);
         mTakeImageButton = (Button) findViewById(R.id.btn_takeGroup);
+        mTakeImageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Call lock focus to begin taking our picture!
+                lockFocus();
+            }
+        });
     }
 
     public void startSelfieActivity(View view) {
@@ -218,6 +261,11 @@ public class MainActivity extends AppCompatActivity {
                     continue;
                 }
                 imageSize = new Size(groupView.getWidth(), groupView.getHeight());
+                // image reader with group view's width, height, and maxImages is just 1
+                imageReader = ImageReader.newInstance(groupView.getWidth(), groupView.getHeight(),
+                        ImageFormat.JPEG, 1);
+                imageReader.setOnImageAvailableListener(mOnImageAvailableListener,
+                        groupBackgroundHandler);
                 groupCameraDeviceId = cameraId; //create a parameter for this
                 return;
             }
@@ -257,12 +305,15 @@ public class MainActivity extends AppCompatActivity {
         groupCaptureRequestBuilder = groupCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
         groupCaptureRequestBuilder.addTarget(previewSurface);
 
-        groupCameraDevice.createCaptureSession(Arrays.asList(previewSurface),
+        groupCameraDevice.createCaptureSession(Arrays.asList(previewSurface,
+                                                              imageReader.getSurface()),
                 new CameraCaptureSession.StateCallback() {
                     @Override
                     public void onConfigured(CameraCaptureSession session) {
+                        // Set up member
+                        previewCaptureSession = session;
                         try {
-                            session.setRepeatingRequest(
+                            previewCaptureSession.setRepeatingRequest(
                                     groupCaptureRequestBuilder.build(), null, null
                             );
                         } catch (CameraAccessException e) {
@@ -275,6 +326,21 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 }, null);
+    }
+
+    private void lockFocus() {
+        groupCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                CaptureRequest.CONTROL_AF_TRIGGER_START);
+        // Lock the capture state
+        captureState = STATE_WAIT_LOCK;
+        try {
+            previewCaptureSession.capture(groupCaptureRequestBuilder.build(), previewCaptureCallback,
+                    groupBackgroundHandler);
+        }
+        // Rename later
+        catch (CameraAccessException error) {
+            error.printStackTrace();
+        }
     }
 
     private void closeCamera() {
