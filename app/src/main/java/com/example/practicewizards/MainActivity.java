@@ -150,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
             // Now put bytes into file
             FileOutputStream fileOutputStream = null;
             try {
-                fileOutputStream = new FileOutputStream(mPhotoFileName); // open file
+                fileOutputStream = new FileOutputStream(createPhotoFileName()); // open file
                 fileOutputStream.write(bytes); // Write the bytes to the file
             } catch (IOException e) {
                 e.printStackTrace();
@@ -231,11 +231,6 @@ public class MainActivity extends AppCompatActivity {
         getWindow().getDecorView().setBackgroundColor(Color.argb(255, 0, 100, 100));
 
         createPhotoFolder();
-        try {
-            createPhotoFileName();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
         groupView = (TextureView)findViewById(R.id.groupView);
 
