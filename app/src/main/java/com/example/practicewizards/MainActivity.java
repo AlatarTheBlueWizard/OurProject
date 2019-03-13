@@ -115,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
     private Size mPhotoSize;
     private Size mPreviewSize;
     private ImageReader mImageReader;
-    private final ImageReader.OnImageAvailableListener mOnImageAvailableListener = new
+    private final ImageReader.OnImageAvailableListener groupOnImageAvailableListener = new
             ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
@@ -297,39 +297,64 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
+    /**
+     * Creates a Camera Manager Object and iterates through its CameraIdList to determine which camera ID is needed to connect the camera
+     * @param width
+     * Uses the the width of the texture view to determine image size width
+     * @param height
+     * Uses the the height of the texture view to determine image size height
+     */
     private void setUpCamera(int width, int height) {
+        //create a camera manager object and retrieve its service context
         CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
 
         try {
+            //iterate through the camera manager object's camera ID list
             for(String cameraId : cameraManager.getCameraIdList()){
+                //create an object to store each camera ID's camera characteristics
                 CameraCharacteristics cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId);
+                //Skip the first (front facing) camera
                 if(cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT) {
                     continue;
                 }
+                //Set the image size to be the width and height of the texture view
                 imageSize = new Size(groupView.getWidth(), groupView.getHeight());
                 // image reader with group view's width, height, and maxImages is just 1
                 imageReader = ImageReader.newInstance(groupView.getWidth(), groupView.getHeight(),
                         ImageFormat.JPEG, 1);
-                imageReader.setOnImageAvailableListener(mOnImageAvailableListener,
+                //Set image reader's available listener
+                imageReader.setOnImageAvailableListener(groupOnImageAvailableListener,
                         groupBackgroundHandler);
-                groupCameraDeviceId = cameraId; //create a parameter for this
+                //set the Camera Device ID to the selected camera
+                groupCameraDeviceId = cameraId;
                 return;
             }
         } catch (CameraAccessException e) {
+            Log.e(TAG, "Failed to iterate through camera ID list from cameraManager");
             e.printStackTrace();
         }
     }
 
+    /**
+     * Uses a camera ID, a camera device, and a background handler to connect and open the camera
+     */
     private void connectCamera() {
+        //create a camera manager object and retrieve its service context
         CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+
+        //check if android sdk version supports Camera 2 API
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+            //check if user granted permission to access camera
             if(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED){
                 try {
+                    //open the camera
                     cameraManager.openCamera(groupCameraDeviceId, groupCameraDeviceStateCallback, groupBackgroundHandler);
                 } catch (CameraAccessException e) {
+                    Log.e(TAG, "Camera failed to open");
                     e.printStackTrace();
                 }
             } else {
+                //if permission not yet granted, ask user for permission
                 if(shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)){
                     Toast.makeText(this, "App requires access to camera", Toast.LENGTH_LONG).show();
                 }
@@ -337,8 +362,10 @@ public class MainActivity extends AppCompatActivity {
             }
         } else {
             try {
+                //if not within SDK range, try opening anyway
                 cameraManager.openCamera(groupCameraDeviceId, groupCameraDeviceStateCallback, groupBackgroundHandler);
             } catch (CameraAccessException e) {
+                Log.e(TAG, "Camera failed to open");
                 e.printStackTrace();
             }
         }
