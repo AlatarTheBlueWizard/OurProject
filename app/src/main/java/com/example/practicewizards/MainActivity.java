@@ -353,16 +353,36 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Sets up the surfaceTexture, sets its buffer size, creates a previewSurface
+     * to add as target for our groupCaptureRequestBuilder. The builder comes from
+     * a createCaptureRequest() on the groupCameraDevice using the TEMPLATE_STILL_CAPTURE
+     * for a single picture.
+     * Then, we createCaptureSession() from the previewSurface, imageReader surface, and
+     * create a new CameraCaptureSession.StateCallBack() anonymous object.
+     * When onConfigured() is called on the CaptureSession, the previewCaptureSession member
+     * variable will be set. Then we will continue to setRepeatingRequests for image capturing on
+     * builder and background handler.
+     * @throws CameraAccessException
+     */
     private void startPic() throws CameraAccessException {
+        // Set textures
         SurfaceTexture surfaceTexture = groupView.getSurfaceTexture();
         surfaceTexture.setDefaultBufferSize(groupView.getWidth(), groupView.getHeight());
         Surface previewSurface = new Surface(surfaceTexture);
+        // Set CaptureRequestBuilder from camera createCaptureRequest() method and
+        // add the builder to target the preview surface
+        // Create the capture session
         groupCaptureRequestBuilder = groupCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
         groupCaptureRequestBuilder.addTarget(previewSurface);
-
         groupCameraDevice.createCaptureSession(Arrays.asList(previewSurface,
                                                               imageReader.getSurface()),
                 new CameraCaptureSession.StateCallback() {
+
+                    /**
+                     * Create a capture session live streaming the CaptureRequestBuilder
+                     * @param session
+                     */
                     @Override
                     public void onConfigured(CameraCaptureSession session) {
                         // Set up member
@@ -372,6 +392,7 @@ public class MainActivity extends AppCompatActivity {
                                     groupCaptureRequestBuilder.build(), null,
                                     groupBackgroundHandler); // Used to be null!, 3rd parameter
                         } catch (CameraAccessException e) {
+                            Log.e(TAG, "Error in accessing cameras");
                             e.printStackTrace();
                         }
                     }
@@ -383,18 +404,28 @@ public class MainActivity extends AppCompatActivity {
                 }, null);
     }
 
+    /**
+     * Locks the focus on the live streaming camera device for setup to take the actual picture.
+     * Picture will be taken immediately after.
+     */
     private void lockFocus() {
+        // Set our CaptureRequestBuilder to lock the focus
         groupCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
                 CaptureRequest.CONTROL_AF_TRIGGER_START);
         // Lock the capture state
+        // STATE_WAIT_LOCK is final int = 1
+        // Capture State holds the current state of the camera preview (whether its locked or not)
         captureState = STATE_WAIT_LOCK;
+        // Try to capture the image
         try {
+            // Put it on the background thread
             previewCaptureSession.capture(groupCaptureRequestBuilder.build(), previewCaptureCallback,
                     groupBackgroundHandler);
         }
-        // Rename later
-        catch (CameraAccessException error) {
-            error.printStackTrace();
+        // Catch any accessing exceptions
+        catch (CameraAccessException camAccessExcept) {
+            Log.e(TAG, "Error Accessing Camera for capture()");
+            camAccessExcept.printStackTrace(); // Print stack
         }
     }
 
@@ -429,30 +460,40 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Creates a still capture
+     * Creates a still capture session for a single picture to be taken in portrait mode (90֯ ).
+     * Create a stillCaptureCallback with the needed call to createPhotoFileName() when capture
+     * has started.
      */
     private void startStillCapture() {
+        // Try to create a CaptureCall back
         try {
-            // Use the still capture template for our capture request
+            // Use the still capture template for our capture request builder
+            // Add target to be the imageReader's surface
+            // Set the orientation to be portrait
             groupCaptureRequestBuilder =
                     groupCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             groupCaptureRequestBuilder.addTarget(imageReader.getSurface());
             groupCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, 90);
 
+            // Create stillCaptureCallback
             CameraCaptureSession.CaptureCallback stillCaptureCallback = new
                     CameraCaptureSession.CaptureCallback() {
+                        // When capture has started, call createPhotoFileName()
                         @Override
                         public void onCaptureStarted(@NonNull CameraCaptureSession session,
                                                      @NonNull CaptureRequest request,
                                                      long timestamp, long frameNumber) {
                             super.onCaptureStarted(session, request, timestamp, frameNumber);
+                            // Try to create a unique photo file
                             try {
                                 createPhotoFileName();
                             } catch (IOException e) {
+                                Log.e(TAG, "Error in calling createPhotoFileName()");
                                 e.printStackTrace();
                             }
                         }
                     };
+            // Call capture! Give it the builder and the stillCaptureCallback
             previewCaptureSession.capture(groupCaptureRequestBuilder.build(), stillCaptureCallback,
                     null); // Already on the background thread, give thread null
         }
