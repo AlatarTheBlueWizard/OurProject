@@ -9,7 +9,7 @@
     <uses-feature android:name="android.hardware.camera.front" />
     <!-- may need android.hardware.camera.level.full -->
     <uses-feature android:name="android.hardware.camera" />
-    <!-- added to allow writing to external storage -->
+    <!-- added to allow writing to external storage, allow write and read -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
     <application

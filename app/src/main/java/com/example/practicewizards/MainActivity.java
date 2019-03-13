@@ -45,6 +45,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -150,11 +151,16 @@ public class MainActivity extends AppCompatActivity {
             // Now put bytes into file
             FileOutputStream fileOutputStream = null;
             try {
-                createPhotoFolder();
-                fileOutputStream = new FileOutputStream(createPhotoFileName()); // open file
+                // createPhotoFolder() should have already been called
+                Log.i(TAG, "Write the photo to the photo filename");
+                if (!mPhotoFolder.exists())
+                    Log.e(TAG, "Called create photo folder, it still doesn't exist" +
+                            mPhotoFolder.mkdirs());
+                fileOutputStream = new FileOutputStream(mPhotoFileName); // open file
                 Toast.makeText(getApplicationContext(), "File Output Stream Created",
                         Toast.LENGTH_SHORT).show();
                 fileOutputStream.write(bytes); // Write the bytes to the file
+                Log.d(TAG, "File Name: " + mPhotoFileName);
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (NullPointerException nullPtr) {
@@ -163,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
             }
             finally {
                 // Close image
-                Log.e(TAG, "WAHOO");
+                Log.i(TAG, "Close the output stream");
                 image.close();
                 if (fileOutputStream != null) {
                     try {
@@ -182,13 +188,13 @@ public class MainActivity extends AppCompatActivity {
 
                 private void process(CaptureResult captureResult) {
                     switch (captureState) {
-                        case STATE_PREVIEW: {
+                        case STATE_PREVIEW:
                             // Do nothing
                             break;
-                        }
-                        case STATE_WAIT_LOCK: {
+                        case STATE_WAIT_LOCK:
                             // Set state back to preview to avoid taking tons of pics
                             captureState = STATE_PREVIEW;
+
                             // Integer for Auto Focus State
                             Integer afState = captureResult.get(CaptureResult.CONTROL_AF_STATE);
                             // SUPPORT new and old devices
@@ -197,9 +203,9 @@ public class MainActivity extends AppCompatActivity {
                                 Toast.makeText(getApplicationContext(), "AF LOCKED!",
                                         Toast.LENGTH_SHORT).show();
                                 startStillCapture();
+                                Log.i(TAG, "AF Locked");
                             }
                             break;
-                        }
                     }
                 }
 
@@ -238,6 +244,8 @@ public class MainActivity extends AppCompatActivity {
 
         createPhotoFolder();
 
+        Log.i(TAG, "Files Location" + mPhotoFolder.getAbsolutePath());
+
         groupView = (TextureView)findViewById(R.id.groupView);
 
         mTextureView = (TextureView) findViewById(R.id.groupView);
@@ -252,6 +260,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void startSelfieActivity(View view) {
+        Log.i(TAG, "Selfie intent starting");
         Intent selfieIntent = new Intent(this, Main2Activity.class);
         startActivity(selfieIntent);
     }
@@ -360,8 +369,8 @@ public class MainActivity extends AppCompatActivity {
                         previewCaptureSession = session;
                         try {
                             previewCaptureSession.setRepeatingRequest(
-                                    groupCaptureRequestBuilder.build(), null, null
-                            );
+                                    groupCaptureRequestBuilder.build(), null,
+                                    groupBackgroundHandler); // Used to be null!, 3rd parameter
                         } catch (CameraAccessException e) {
                             e.printStackTrace();
                         }
@@ -483,24 +492,43 @@ public class MainActivity extends AppCompatActivity {
     private void createPhotoFolder() {
         Toast.makeText(getApplicationContext(), "Create Photo Folder called", Toast.LENGTH_SHORT)
                 .show();
+
         File imageFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        Toast.makeText(getApplicationContext(), "get external storage", Toast.LENGTH_SHORT)
+        if (!imageFile.mkdirs())
+            Log.e(TAG, "Directory not created");
+
+        Toast.makeText(getApplicationContext(), "External file storage: " +
+                imageFile.getName(), Toast.LENGTH_SHORT)
                 .show();
+
+        // Create folder from the abstract pathname created above (imageFile)
         mPhotoFolder = new File(imageFile, "CameraImages");
-        Toast.makeText(getApplicationContext(), "photo folder created", Toast.LENGTH_SHORT)
+        Toast.makeText(getApplicationContext(), "Photo folder created: " +
+                mPhotoFolder.getName(), Toast.LENGTH_SHORT)
                 .show();
+
         if(!mPhotoFolder.exists()) {
-            mPhotoFolder.mkdirs();
-            Toast.makeText(getApplicationContext(), "Mkdir", Toast.LENGTH_SHORT)
-                    .show();
+
+            Toast.makeText(getApplicationContext(), "Mkdir" + mPhotoFolder.mkdirs(),
+                    Toast.LENGTH_SHORT).show();
         }
     }
 
     private String createPhotoFileName()throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String prepend = "PHOTO_" + timeStamp + "_";
-        File photoFile = File.createTempFile(prepend, ".jpeg", mPhotoFolder);
+        try {
+            if (!mPhotoFolder.exists()) {
+                throw new NullPointerException("Photo Folder does not exist");
+            }
+        }
+        catch (NullPointerException folderError) {
+            Log.e(TAG, "Folder non-existant");
+            folderError.printStackTrace();
+        }
+
+        File photoFile = File.createTempFile(prepend, ".jpg", mPhotoFolder);
         mPhotoFileName = photoFile.getAbsolutePath();
-        return photoFile.getAbsolutePath();
+        return mPhotoFileName;
     }
 }
