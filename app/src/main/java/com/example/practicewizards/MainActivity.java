@@ -454,19 +454,34 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * initializes declared background handler thread and sets a name for it
+     * starts the thread and initializes the handler using the same thread
+     */
     private void startBackgroundThread() {
+        //Initialize Background Handler Thread
         groupBackgroundHandlerThread = new HandlerThread("GroupCameraThread");
+        //Start Thread
         groupBackgroundHandlerThread.start();
+        //Initialize Background Handler using the Background Handler Thread in its Constructor
         groupBackgroundHandler = new Handler(groupBackgroundHandlerThread.getLooper());
     }
 
+    /**
+     * Safely quits and joins any started threads and sets variables back to null
+     */
     private void stopBackgroundThread() {
+        //Avoid errors on stopping thread by quitting safely
         groupBackgroundHandlerThread.quitSafely();
         try {
+            //Join threads
             groupBackgroundHandlerThread.join();
+
+            //Set Background handler and Handler thread to null
             groupBackgroundHandlerThread = null;
             groupBackgroundHandler = null;
         } catch (InterruptedException e) {
+            Log.e(TAG, "Group Background Handler Thread failed to join after quitting safely");
             e.printStackTrace();
         }
     }
