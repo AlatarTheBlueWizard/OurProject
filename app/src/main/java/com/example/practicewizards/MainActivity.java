@@ -44,6 +44,14 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 
+/**
+ * Main Activity class
+ * initializes variables for use in various methods throughout main.
+ * Uses TextureView to create a new SurfaceTextureListener.
+ * Methods include actions such as setting up the camera, calls connectCamera()
+ * Methods also handled are those such as the size changing, if it is destroyed,
+ * or if it has updated.
+ */
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "GroupPhoto.java";
     private File groupPhotoFolder;
@@ -223,10 +231,13 @@ public class MainActivity extends AppCompatActivity {
         ORIENTATIONS.append(Surface.ROTATION_270, 270);
     }
 
-    private TextureView mTextureView;
-    private Button mTakeImageButton;
-    private boolean mIsTaken;
+    private Button groupTakeImageButton;
 
+    /**
+     * Creates views, also Logs the file location from public path.
+     *
+     * @param savedInstanceState
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -239,9 +250,8 @@ public class MainActivity extends AppCompatActivity {
 
         groupView = (TextureView)findViewById(R.id.groupView);
 
-        mTextureView = (TextureView) findViewById(R.id.groupView);
-        mTakeImageButton = (Button) findViewById(R.id.btn_takeGroup);
-        mTakeImageButton.setOnClickListener(new View.OnClickListener() {
+        groupTakeImageButton = (Button) findViewById(R.id.btn_takeGroup);
+        groupTakeImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 // Call lock focus to begin taking our picture!
