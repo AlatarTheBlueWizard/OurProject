@@ -3,7 +3,6 @@ package com.example.practicewizards;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -19,18 +18,15 @@ import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.media.Image;
 import android.media.ImageReader;
-import android.media.ImageReader;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.util.Size;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Surface;
@@ -41,22 +37,17 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Date;
-import android.support.annotation.NonNull;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "GroupPhoto.java";
-    private File mPhotoFolder;
-    private String mPhotoFileName;
+    private File groupPhotoFolder;
+    private String groupPhotoFileName;
     private static final int CAMERA_REQUEST=1888;
     ImageView myImage;
     private static int REQUEST_CAMERA_PERMISSION_RESULT = 0;
@@ -153,14 +144,14 @@ public class MainActivity extends AppCompatActivity {
             try {
                 // createPhotoFolder() should have already been called
                 Log.i(TAG, "Write the photo to the photo filename");
-                if (!mPhotoFolder.exists())
+                if (!groupPhotoFolder.exists())
                     Log.e(TAG, "Called create photo folder, it still doesn't exist" +
-                            mPhotoFolder.mkdirs());
-                fileOutputStream = new FileOutputStream(mPhotoFileName); // open file
+                            groupPhotoFolder.mkdirs());
+                fileOutputStream = new FileOutputStream(groupPhotoFileName); // open file
                 Toast.makeText(getApplicationContext(), "File Output Stream Created",
                         Toast.LENGTH_SHORT).show();
                 fileOutputStream.write(bytes); // Write the bytes to the file
-                Log.d(TAG, "File Name: " + mPhotoFileName);
+                Log.d(TAG, "File Name: " + groupPhotoFileName);
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (NullPointerException nullPtr) {
@@ -244,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
 
         createPhotoFolder();
 
-        Log.i(TAG, "Files Location" + mPhotoFolder.getAbsolutePath());
+        Log.i(TAG, "Files Location" + groupPhotoFolder.getAbsolutePath());
 
         groupView = (TextureView)findViewById(R.id.groupView);
 
@@ -422,12 +413,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private static int sensorToDeviceRotation(CameraCharacteristics cameraCharacteristics, int deviceOrientation){
-        int sensorOrientation = cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-        deviceOrientation = ORIENTATIONS.get(deviceOrientation);
-        return (sensorOrientation + deviceOrientation + 360) % 360;
-    }
-
     /**
      * Creates a still capture
      */
@@ -462,23 +447,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void takePicture() {
-        try {
-            CaptureRequest.Builder captureRequestBuilder =
-                    groupCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-        Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        startActivityForResult(i, CAMERA_REQUEST);
-    }
-
-    public void takePicture2() {
-        Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        startActivityForResult(i, 0);
-    }
-
     protected  void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == RESULT_OK) {
@@ -489,11 +457,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Contains photoFolder creation method and file name of the photo taken
+     * @return groupPhotoFileName will be returned
+     */
+
+    //Creates toast notifying photo folder creation
     private void createPhotoFolder() {
         Toast.makeText(getApplicationContext(), "Create Photo Folder called", Toast.LENGTH_SHORT)
                 .show();
-
+        //gets external storage from public directory path (DIRECTORY_PICTURES)
         File imageFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        //if imageFile directory doesn't exist
         if (!imageFile.mkdirs())
             Log.e(TAG, "Directory not created");
 
@@ -502,33 +477,44 @@ public class MainActivity extends AppCompatActivity {
                 .show();
 
         // Create folder from the abstract pathname created above (imageFile)
-        mPhotoFolder = new File(imageFile, "CameraImages");
+        groupPhotoFolder = new File(imageFile, "CameraImages");
         Toast.makeText(getApplicationContext(), "Photo folder created: " +
-                mPhotoFolder.getName(), Toast.LENGTH_SHORT)
+                groupPhotoFolder.getName(), Toast.LENGTH_SHORT)
                 .show();
 
-        if(!mPhotoFolder.exists()) {
+        //if photo folder doesn't exist
+        if(!groupPhotoFolder.exists()) {
 
-            Toast.makeText(getApplicationContext(), "Mkdir" + mPhotoFolder.mkdirs(),
+            //toast notifying of directory creation
+            Toast.makeText(getApplicationContext(), "Mkdir" + groupPhotoFolder.mkdirs(),
                     Toast.LENGTH_SHORT).show();
         }
     }
 
+    //Method creates name of photo file, adds additional date format and timestamp.
+    //if photo folder does not exist, notifies of its non existence, also creates a temp
+    //file that is prepended with ".jpg" and gets the path from the photo file.
     private String createPhotoFileName()throws IOException {
+        //adds a date format for the timestamp of the photo taken
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String prepend = "PHOTO_" + timeStamp + "_";
         try {
-            if (!mPhotoFolder.exists()) {
+            //if photo folder does not exist...
+            if (!groupPhotoFolder.exists()) {
                 throw new NullPointerException("Photo Folder does not exist");
             }
         }
         catch (NullPointerException folderError) {
-            Log.e(TAG, "Folder non-existant");
+            //will notify of folders non-existence
+            Log.e(TAG, "Folder non-existent");
             folderError.printStackTrace();
         }
 
-        File photoFile = File.createTempFile(prepend, ".jpg", mPhotoFolder);
-        mPhotoFileName = photoFile.getAbsolutePath();
-        return mPhotoFileName;
+        //creates temporary photo file with ".jpg" suffix which is then prepended with
+        //existing photo folder.
+        File photoFile = File.createTempFile(prepend, ".jpg", groupPhotoFolder);
+        groupPhotoFileName = photoFile.getAbsolutePath();
+        //return photo filename
+        return groupPhotoFileName;
     }
 }
