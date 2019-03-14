@@ -227,18 +227,28 @@ public class MainActivity extends AppCompatActivity {
     private Button mTakeImageButton;
     private boolean mIsTaken;
 
+    /**
+     * Sets the views. Creates our photo folder. Sets the imageButton to
+     * take the picture.
+     * @param savedInstanceState Whatever was the last saved state, like in onPause() or onStop()
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Set views
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         getWindow().getDecorView().setBackgroundColor(Color.argb(255, 0, 100, 100));
 
+        // Get our photo folder ready
         createPhotoFolder();
 
+        // Log
         Log.i(TAG, "Files Location" + groupPhotoFolder.getAbsolutePath());
 
+        // Set the groupView
         groupView = (TextureView)findViewById(R.id.groupView);
 
+        // Set the textureView, button, and it's listener
         mTextureView = (TextureView) findViewById(R.id.groupView);
         mTakeImageButton = (Button) findViewById(R.id.btn_takeGroup);
         mTakeImageButton.setOnClickListener(new View.OnClickListener() {
@@ -256,30 +266,53 @@ public class MainActivity extends AppCompatActivity {
         startActivity(selfieIntent);
     }
 
+    /**
+     * When app is resumed, start background thread again, setup cameras again, connect to the
+     * camera. If the view is not available, set the view
+     */
     @Override
     protected void onResume() {
         super.onResume();
 
+        // Start thread
         startBackgroundThread();
 
+        // See if view is available
         if(groupView.isAvailable()) {
+            // Set up and connect
             setUpCamera(groupView.getWidth(), groupView.getHeight());
             connectCamera();
-        } else {
+        }
+        // Else view not available, set it
+        else {
+            // Call set on groupView
             groupView.setSurfaceTextureListener(groupTextListener);
         }
     }
 
+    /**
+     * Prompt user to allow camera permissions if he/she has previously declined to do so
+     * @param requestCode What request are we using
+     * @param permissions Have permissions been granted
+     * @param grantResults What permissions have been granted
+     */
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults); // Call parent
+        // IF permission code is the camera permission code
         if(requestCode == REQUEST_CAMERA_PERMISSION_RESULT){
+            // If the first result given which will be the camera permission has not been granted
+            // Make a toast notifying user
             if(grantResults[0] != PackageManager.PERMISSION_GRANTED){
-                Toast.makeText(this, "Application won't run without camera services", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Application won't run without camera services",
+                        Toast.LENGTH_LONG).show();
             }
         }
     }
 
+    /**
+     * When user navigates away, close the camera and stop the background thread
+     */
     @Override
     protected void onPause() {
         closeCamera();
@@ -287,11 +320,17 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
     }
 
+    /**
+     * When activity is safely killed
+     */
     @Override
     protected void onStop() {
         super.onStop();
     }
 
+    /**
+     * When activity is killed
+     */
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -447,8 +486,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Closes the groupCameraDevice
+     */
     private void closeCamera() {
+        // Check if not null pointer
         if(groupCameraDevice != null) {
+            // Close camera
             groupCameraDevice.close(); // end camera process
             groupCameraDevice = null; // set it to null
         }
@@ -512,16 +556,6 @@ public class MainActivity extends AppCompatActivity {
         catch (CameraAccessException camAccessExcept) {
             Log.e(TAG, "Error accessing camera");
             camAccessExcept.printStackTrace();
-        }
-    }
-
-    protected  void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == RESULT_OK) {
-            if(requestCode == CAMERA_REQUEST) {
-                Bitmap b = (Bitmap)data.getExtras().get("data");
-                myImage.setImageBitmap(b);
-            }
         }
     }
 
