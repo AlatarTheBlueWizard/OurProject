@@ -44,6 +44,14 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 
+/**
+ * Main Activity class
+ * initializes variables for use in various methods throughout main.
+ * Uses TextureView to create a new SurfaceTextureListener.
+ * Methods include actions such as setting up the camera, calls connectCamera()
+ * Methods also handled are those such as the size changing, if it is destroyed,
+ * or if it has updated.
+ */
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "GroupPhoto.java";
     private File groupPhotoFolder;
@@ -223,14 +231,14 @@ public class MainActivity extends AppCompatActivity {
         ORIENTATIONS.append(Surface.ROTATION_270, 270);
     }
 
-    private TextureView mTextureView;
-    private Button mTakeImageButton;
-    private boolean mIsTaken;
+
+    // Button to take group photo
+    private Button groupTakeImageButton;
 
     /**
-     * Sets the views. Creates our photo folder. Sets the imageButton to
-     * take the picture.
-     * @param savedInstanceState Whatever was the last saved state, like in onPause() or onStop()
+     * Creates views, also Logs the file location from public path.
+     *
+     * @param savedInstanceState
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -248,10 +256,8 @@ public class MainActivity extends AppCompatActivity {
         // Set the groupView
         groupView = (TextureView)findViewById(R.id.groupView);
 
-        // Set the textureView, button, and it's listener
-        mTextureView = (TextureView) findViewById(R.id.groupView);
-        mTakeImageButton = (Button) findViewById(R.id.btn_takeGroup);
-        mTakeImageButton.setOnClickListener(new View.OnClickListener() {
+        groupTakeImageButton = (Button) findViewById(R.id.btn_takeGroup);
+        groupTakeImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 // Call lock focus to begin taking our picture!
@@ -498,19 +504,34 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * initializes declared background handler thread and sets a name for it
+     * starts the thread and initializes the handler using the same thread
+     */
     private void startBackgroundThread() {
+        //Initialize Background Handler Thread
         groupBackgroundHandlerThread = new HandlerThread("GroupCameraThread");
+        //Start Thread
         groupBackgroundHandlerThread.start();
+        //Initialize Background Handler using the Background Handler Thread in its Constructor
         groupBackgroundHandler = new Handler(groupBackgroundHandlerThread.getLooper());
     }
 
+    /**
+     * Safely quits and joins any started threads and sets variables back to null
+     */
     private void stopBackgroundThread() {
+        //Avoid errors on stopping thread by quitting safely
         groupBackgroundHandlerThread.quitSafely();
         try {
+            //Join threads
             groupBackgroundHandlerThread.join();
+
+            //Set Background handler and Handler thread to null
             groupBackgroundHandlerThread = null;
             groupBackgroundHandler = null;
         } catch (InterruptedException e) {
+            Log.e(TAG, "Group Background Handler Thread failed to join after quitting safely");
             e.printStackTrace();
         }
     }
