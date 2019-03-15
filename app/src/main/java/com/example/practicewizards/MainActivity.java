@@ -75,8 +75,8 @@ public class MainActivity extends AppCompatActivity {
 
     // Boolean representing whether picture has been taken or not
     boolean picTaken = false;
-    // Image that is saved
-    Image savedImage;
+    // Bitmap of image
+    private Bitmap bitmap;
 
     private TextureView groupView;
     private TextureView.SurfaceTextureListener groupTextListener = new TextureView.SurfaceTextureListener() {
@@ -172,8 +172,11 @@ public class MainActivity extends AppCompatActivity {
                         Toast.LENGTH_SHORT).show();
                 fileOutputStream.write(bytes); // Write the bytes to the file
                 Log.d(TAG, "File Name: " + groupPhotoFileName);
+
                 // Set picTaken to true, picture and file saving have been successful
                 picTaken = true;
+                // Save the image to outer class
+                bitmap = BitmapFactory.decodeFile(groupPhotoFileName);
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (NullPointerException nullPtr) {
@@ -280,10 +283,24 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Starts next activity to take selfie pic
+     * @param view reference to views state
+     */
     public void startSelfieActivity(View view) {
-        Log.i(TAG, "Selfie intent starting");
-        Intent selfieIntent = new Intent(this, Main2Activity.class);
-        startActivity(selfieIntent);
+        // Don't start next activity if the user hasn't taken a picture
+        // and saved the image
+        // make sure we have a saved image. Double check also the bitmap
+        if (picTaken && bitmap != null) {
+            Log.i(TAG, "Selfie intent starting");
+            Intent selfieIntent = new Intent(this, Main2Activity.class);
+            startActivity(selfieIntent);
+        }
+        // Else image is null, make toast
+        else {
+            Toast.makeText(getApplicationContext(), R.string.error_pic_not_taken,
+                    Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**

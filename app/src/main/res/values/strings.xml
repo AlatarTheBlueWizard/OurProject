@@ -5,4 +5,5 @@
     <string name="instruction_group">TAKE A GROUP PICTURE</string>
     <string name="instruction_selfie">TAKE A SELFIE</string>
     <string name="to_next">NEXT</string>
+    <string name="error_pic_not_taken">Sorry! Must take group pic first</string>
 </resources>
