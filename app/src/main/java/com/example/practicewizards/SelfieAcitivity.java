@@ -28,7 +28,7 @@ import android.widget.Toast;
 
 import java.util.Arrays;
 
-public class Main2Activity extends AppCompatActivity {
+public class SelfieAcitivity extends AppCompatActivity {
     private static int REQUEST_CAMERA_PERMISSION_RESULT = 0;
     private TextureView selfieView;
     private TextureView.SurfaceTextureListener selfieTextListener = new TextureView.SurfaceTextureListener() {

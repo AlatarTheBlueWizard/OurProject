@@ -6,13 +6,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ColorFilter;
 import android.graphics.ImageFormat;
-import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
-import android.graphics.drawable.Drawable;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -29,7 +25,6 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -45,7 +40,6 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -59,7 +53,7 @@ import java.util.Date;
  * Methods also handled are those such as the size changing, if it is destroyed,
  * or if it has updated.
  */
-public class MainActivity extends AppCompatActivity {
+public class GroupActivity extends AppCompatActivity {
     private static final String TAG = "GroupPhoto.java";
     private File groupPhotoFolder;
     private String groupPhotoFileName;
@@ -331,7 +325,7 @@ public class MainActivity extends AppCompatActivity {
         // make sure we have a saved image. Double check also the bitmap
         if (picTaken && bitmap != null) {
             Log.i(TAG, "Selfie intent starting");
-            Intent selfieIntent = new Intent(this, Main2Activity.class);
+            Intent selfieIntent = new Intent(this, SelfieAcitivity.class);
             startActivity(selfieIntent);
         }
         // Else image is null, make toast
