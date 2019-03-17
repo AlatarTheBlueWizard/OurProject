@@ -167,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
                 if (!groupPhotoFolder.exists())
                     Log.e(TAG, "Called create photo folder, it still doesn't exist" +
                             groupPhotoFolder.mkdirs());
-                fileOutputStream = new FileOutputStream(groupPhotoFileName); // open file
+                fileOutputStream = new FileOutputStream(createPhotoFileName()); // open file
                 Toast.makeText(getApplicationContext(), "File Output Stream Created",
                         Toast.LENGTH_SHORT).show();
                 fileOutputStream.write(bytes); // Write the bytes to the file
@@ -230,7 +230,16 @@ public class MainActivity extends AppCompatActivity {
                                                @NonNull CaptureRequest request,
                                                @NonNull TotalCaptureResult result) {
                     super.onCaptureCompleted(session, request, result);
-                    process(result);
+                    process(result); // Start Still Capture
+
+                    // Stop streaming the camera. Hold the state
+                    try {
+                        session.stopRepeating(); // Stop repeating requests
+                        closeCamera(); // Close camera
+                    } catch (CameraAccessException e) {
+                        Log.e(TAG, "Error in closing camera");
+                        e.printStackTrace();
+                    }
                 }
             };
     private CaptureRequest.Builder groupCaptureRequestBuilder;
@@ -277,10 +286,39 @@ public class MainActivity extends AppCompatActivity {
         groupTakeImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Call lock focus to begin taking our picture!
-                lockFocus();
+                // If the picture has not been taken, take it!
+                if (!picTaken) {
+                    // Call lock focus to begin taking our picture!
+                    lockFocus();
+                    groupTakeImageButton.setText(R.string.retake);
+                }
+                // else when clicked after picture has been taken
+                // Reset the view and set up cameras again and change the text
+                // Set pic taken back to false
+                else {
+                    // Delete last saved image
+                    if (picTaken && groupPhotoFileName != null) {
+                        Log.i(TAG, "Delete old photo");
+                        File fDelete = new File(groupPhotoFileName);
+                        // Make sure it exists
+                        if (fDelete.exists()) {
+                            // Delete the file and set the string filename to null
+                            // No more pic taken
+                            fDelete.delete();
+                            groupPhotoFileName = null;
+                            picTaken = false;
+                        }
+                    }
+                    // Pause momentarily and then resume again.
+                    onPause();
+                    onResume();
+                    // Reset text
+                    groupTakeImageButton.setText(R.string.take_group);
+                    // Reset bitmap, help Garbage Collector free up the buffer faster
+                    bitmap = null;
+                }
             }
-        });
+        }); // End of onClickListener initialization
     }
 
     /**
@@ -473,6 +511,7 @@ public class MainActivity extends AppCompatActivity {
                                                               imageReader.getSurface()),
                 new CameraCaptureSession.StateCallback() {
 
+
                     /**
                      * Create a capture session live streaming the CaptureRequestBuilder
                      * @param session
@@ -494,6 +533,14 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onConfigureFailed(CameraCaptureSession session) {
 
+                    }
+
+                    @Override
+                    public void onClosed(CameraCaptureSession session) {
+                        Log.i(TAG, "Close Capture Session and Image Reader");
+                        if (imageReader != null) {
+                            imageReader.close();
+                        }
                     }
                 }, null);
     }
@@ -666,8 +713,13 @@ public class MainActivity extends AppCompatActivity {
 
         //creates temporary photo file with ".jpg" suffix which is then prepended with
         //existing photo folder.
-        File photoFile = File.createTempFile(prepend, ".jpg", groupPhotoFolder);
-        groupPhotoFileName = photoFile.getAbsolutePath();
+        // Don't create to temporary files if groupPhotoFileName already exists
+        if (groupPhotoFileName == null) {
+            Log.i(TAG, "File Name doesn't exist. Create it.");
+            File photoFile = File.createTempFile(prepend, ".jpg", groupPhotoFolder);
+            groupPhotoFileName = photoFile.getAbsolutePath();
+            Log.i(TAG, groupPhotoFileName);
+        }
         //return photo filename
         return groupPhotoFileName;
     }

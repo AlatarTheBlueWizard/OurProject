@@ -36,6 +36,9 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".MainActivity" />
         </activity>
+        <!-- Merging -->
+        <activity android:name=".MergeActivity"
+            android:parentActivityName=".Main2Activity" />
     </application>
 
 </manifest>
