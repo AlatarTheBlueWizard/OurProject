@@ -34,9 +34,7 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.Toast;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -54,13 +52,11 @@ import java.util.Date;
  * or if it has updated.
  */
 public class GroupActivity extends AppCompatActivity {
-    private static final String TAG = "GroupPhoto.java";
+    private static final String TAG = "GroupActivity.java";
     private File groupPhotoFolder;
     private String groupPhotoFileName;
-    private static final int CAMERA_REQUEST=1888;
-    ImageView myImage;
+
     private static int REQUEST_CAMERA_PERMISSION_RESULT = 0;
-    private static int REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_RESULT = 1;
     // State members
     private static final int STATE_PREVIEW = 0;
     private static final int STATE_WAIT_LOCK = 1;
@@ -126,9 +122,7 @@ public class GroupActivity extends AppCompatActivity {
     private HandlerThread groupBackgroundHandlerThread;
     private Handler groupBackgroundHandler;
     private String groupCameraDeviceId; // for setup of the camera
-    private Size mPhotoSize;
-    private Size mPreviewSize;
-    private ImageReader mImageReader;
+
     private final ImageReader.OnImageAvailableListener groupOnImageAvailableListener = new
             ImageReader.OnImageAvailableListener() {
                 @Override
@@ -264,7 +258,7 @@ public class GroupActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         // Set views
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_group);
         getWindow().getDecorView().setBackgroundColor(Color.argb(255, 0, 100, 100));
 
         // Get our photo folder ready
@@ -366,7 +360,8 @@ public class GroupActivity extends AppCompatActivity {
      * @param grantResults What permissions have been granted
      */
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults); // Call parent
         // IF permission code is the camera permission code
         if(requestCode == REQUEST_CAMERA_PERMISSION_RESULT){
@@ -656,9 +651,8 @@ public class GroupActivity extends AppCompatActivity {
      * Contains photoFolder creation method and file name of the photo taken
      * @return groupPhotoFileName will be returned
      */
-
-    //Creates toast notifying photo folder creation
     private void createPhotoFolder() {
+        //Creates toast notifying photo folder creation
         Toast.makeText(getApplicationContext(), "Create Photo Folder called", Toast.LENGTH_SHORT)
                 .show();
         //gets external storage from public directory path (DIRECTORY_PICTURES)
@@ -686,9 +680,12 @@ public class GroupActivity extends AppCompatActivity {
         }
     }
 
-    //Method creates name of photo file, adds additional date format and timestamp.
-    //if photo folder does not exist, notifies of its non existence, also creates a temp
-    //file that is prepended with ".jpg" and gets the path from the photo file.
+    /**
+     * Method creates name of photo file, adds additional date format and timestamp.
+     * if photo folder does not exist, notifies of its non existence, also creates a temp
+     * file that is prepended with ".jpg" and gets the path from the photo file.
+     * @throws IOException if working with file fails
+     */
     private String createPhotoFileName()throws IOException {
         //adds a date format for the timestamp of the photo taken
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
