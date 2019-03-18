@@ -65,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
     private String groupPhotoFileName;
     private static final int CAMERA_REQUEST=1888;
     ImageView myImage;
+    ImageView myImage1;
     private static int REQUEST_CAMERA_PERMISSION_RESULT = 0;
     private static int REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_RESULT = 1;
     // State members
@@ -654,4 +655,7 @@ public class MainActivity extends AppCompatActivity {
         //return photo filename
         return groupPhotoFileName;
     }
+
+    //merge methods
+    
 }
