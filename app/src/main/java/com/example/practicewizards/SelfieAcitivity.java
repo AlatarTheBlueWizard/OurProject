@@ -36,13 +36,17 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 public class SelfieAcitivity extends AppCompatActivity {
     private static final String TAG = "SelfieAcitivty.java";
@@ -312,8 +316,21 @@ public class SelfieAcitivity extends AppCompatActivity {
         // make sure we have a saved image. Double check also the bitmap
         if (picTaken && bitmap != null) {
             Log.i(TAG, "Selfie intent starting");
-            Intent selfieIntent = new Intent(this, SelfieAcitivity.class);
-            startActivity(selfieIntent);
+            Intent intent = getIntent();
+            String bitmapJson = intent.getStringExtra("Bitmap");
+
+            Gson gson  = new Gson();
+            Bitmap groupBitmap = gson.fromJson(bitmapJson, Bitmap.class);
+
+            List<Bitmap> bitmaps = new ArrayList<>();
+            bitmaps.add(bitmap);
+            bitmaps.add(groupBitmap);
+
+            String bitmapsJson = gson.toJson(bitmaps);
+
+            Intent mergeIntent = new Intent(this, PhotoTest.class);
+            mergeIntent.putExtra("BitmapArray", bitmapsJson);
+            startActivity(mergeIntent);
         }
         // Else image is null, make toast
         else {
