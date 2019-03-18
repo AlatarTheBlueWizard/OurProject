@@ -35,6 +35,9 @@ import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
+
+import com.google.gson.Gson;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -319,7 +322,15 @@ public class GroupActivity extends AppCompatActivity {
         // make sure we have a saved image. Double check also the bitmap
         if (picTaken && bitmap != null) {
             Log.i(TAG, "Selfie intent starting");
+            //Declare new GSON object for serialization/deserialization
+            Gson gson = new Gson();
+            //Convert bitmap object to JSON string using GSON
+            String bitmapJson = gson.toJson(bitmap);
+            //Declare new intent to next activity
             Intent selfieIntent = new Intent(this, SelfieAcitivity.class);
+            //Add JSON string to intent
+            selfieIntent.putExtra("Bitmap", bitmapJson);
+            //Start next activity
             startActivity(selfieIntent);
         }
         // Else image is null, make toast
