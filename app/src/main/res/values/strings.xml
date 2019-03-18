@@ -4,5 +4,8 @@
     <string name="take_selfie">TAKE SELFIE</string>
     <string name="instruction_group">TAKE A GROUP PICTURE</string>
     <string name="instruction_selfie">TAKE A SELFIE</string>
+    <string name="instruction_merge">MERGE YOUR TWO PHOTOS</string>
     <string name="to_next">NEXT</string>
+    <string name="error_pic_not_taken">Sorry! Must take group pic first</string>
+    <string name="retake">Retake</string>
 </resources>

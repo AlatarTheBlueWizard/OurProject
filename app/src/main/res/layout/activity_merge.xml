@@ -4,10 +4,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".MainActivity">
+    tools:context=".GroupActivity">
 
     <TextView
-        android:id="@+id/instruction_group"
+        android:id="@+id/instruction_merge"
         android:layout_width="wrap_content"
         android:layout_height="42dp"
         android:layout_above="@+id/groupView"
@@ -18,7 +18,7 @@
         android:layout_marginTop="98dp"
         android:layout_marginEnd="41dp"
         android:layout_marginBottom="27dp"
-        android:text="@string/instruction_group"
+        android:text="@string/instruction_merge"
         android:textAlignment="center"
         android:textColor="#000"
         android:textSize="24sp" />
@@ -49,6 +49,6 @@
         android:layout_width="wrap_content"
         android:layout_height="1200px"
         android:layout_alignParentBottom="true"
-        android:layout_marginBottom="106dp" />
+        android:layout_marginBottom="104dp" />
 
 </RelativeLayout>
