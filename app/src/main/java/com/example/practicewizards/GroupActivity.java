@@ -25,6 +25,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -43,8 +44,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Main Activity class
@@ -66,10 +69,6 @@ public class GroupActivity extends AppCompatActivity {
     // Hold the state
     private int captureState = STATE_PREVIEW;
 
-    // Boolean representing whether picture has been taken or not
-    boolean picTaken = false;
-    // Bitmap of image
-    private Bitmap bitmap;
 
     private TextureView groupView;
     private TextureView.SurfaceTextureListener groupTextListener = new TextureView.SurfaceTextureListener() {
@@ -126,6 +125,16 @@ public class GroupActivity extends AppCompatActivity {
     private Handler groupBackgroundHandler;
     private String groupCameraDeviceId; // for setup of the camera
 
+    // BOOLEAN LOGIC MEMBER VARIABLES
+    // Boolean representing whether picture has been taken or not
+    private boolean picTaken = false;
+    // Boolean representing whether or not the camera is ready or not
+    private boolean isReady = false;     // start out not ready
+    // Boolean representing whether or not the photo saving has started
+    private boolean saveStarted = false; // start out not starting a save
+    // Bitmap of image
+    private Bitmap bitmap;
+
     private final ImageReader.OnImageAvailableListener groupOnImageAvailableListener = new
             ImageReader.OnImageAvailableListener() {
                 @Override
@@ -143,6 +152,7 @@ public class GroupActivity extends AppCompatActivity {
         public ImageSaver(Image image) {
             this.image = image;
         }
+
         @Override
         public void run() {
             ByteBuffer byteBuffer = image.getPlanes()[0].getBuffer();
@@ -159,8 +169,6 @@ public class GroupActivity extends AppCompatActivity {
                     Log.e(TAG, "Called create photo folder, it still doesn't exist" +
                             groupPhotoFolder.mkdirs());
                 fileOutputStream = new FileOutputStream(createPhotoFileName()); // open file
-                Toast.makeText(getApplicationContext(), "File Output Stream Created",
-                        Toast.LENGTH_SHORT).show();
                 fileOutputStream.write(bytes); // Write the bytes to the file
                 Log.d(TAG, "File Name: " + groupPhotoFileName);
 
@@ -168,13 +176,13 @@ public class GroupActivity extends AppCompatActivity {
                 picTaken = true;
                 // Save the image to outer class
                 bitmap = BitmapFactory.decodeFile(groupPhotoFileName);
+                Log.i(TAG, "File saved and bitmap created");
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (NullPointerException nullPtr) {
                 Log.e(TAG, "Null something");
                 nullPtr.printStackTrace();
-            }
-            finally {
+            } finally {
                 // Close image
                 Log.i(TAG, "Close the output stream");
                 image.close();
@@ -206,9 +214,9 @@ public class GroupActivity extends AppCompatActivity {
                             Integer afState = captureResult.get(CaptureResult.CONTROL_AF_STATE);
                             // SUPPORT new and old devices
                             if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED ||
-                                afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
-                                Toast.makeText(getApplicationContext(), "AF LOCKED!",
-                                        Toast.LENGTH_SHORT).show();
+                                    afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
+                                // Picture has begun to be saved
+                                saveStarted = true;
                                 startStillCapture();
                                 Log.i(TAG, "AF Locked");
                             }
@@ -227,6 +235,8 @@ public class GroupActivity extends AppCompatActivity {
                     try {
                         session.stopRepeating(); // Stop repeating requests
                         closeCamera(); // Close camera
+                        // Set isReady to false, we're not ready
+                        isReady = false;
                     } catch (CameraAccessException e) {
                         Log.e(TAG, "Error in closing camera");
                         e.printStackTrace();
@@ -264,21 +274,17 @@ public class GroupActivity extends AppCompatActivity {
         setContentView(R.layout.activity_group);
         getWindow().getDecorView().setBackgroundColor(Color.argb(255, 0, 100, 100));
 
-        // Get our photo folder ready
-        createPhotoFolder();
-
-        // Log
-        Log.i(TAG, "Files Location" + groupPhotoFolder.getAbsolutePath());
-
         // Set the groupView
-        groupView = (TextureView)findViewById(R.id.groupView);
+        groupView = findViewById(R.id.groupView);
 
-        groupTakeImageButton = (Button) findViewById(R.id.btn_takeGroup);
+        groupTakeImageButton = findViewById(R.id.btn_takeGroup);
         groupTakeImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // Don't call any methods unless camera is ready!
                 // If the picture has not been taken, take it!
-                if (!picTaken) {
+                // Make sure user isn't faster than us and won't break our app
+                if (isReady && !picTaken && bitmap == null) {
                     // Call lock focus to begin taking our picture!
                     lockFocus();
                     groupTakeImageButton.setText(R.string.retake);
@@ -296,13 +302,16 @@ public class GroupActivity extends AppCompatActivity {
                             // Delete the file and set the string filename to null
                             // No more pic taken
                             fDelete.delete();
-                            groupPhotoFileName = null;
-                            picTaken = false;
+                            groupPhotoFileName = null; // delete string filename
+                            picTaken = false;    // picture not taken
+                            saveStarted = false; // nothing saved anymore
                         }
                     }
                     // Pause momentarily and then resume again.
                     onPause();
                     onResume();
+                    while (!isReady)
+                        ;
                     // Reset text
                     groupTakeImageButton.setText(R.string.take_group);
                     // Reset bitmap, help Garbage Collector free up the buffer faster
@@ -310,13 +319,35 @@ public class GroupActivity extends AppCompatActivity {
                 }
             }
         }); // End of onClickListener initialization
+
+        // Array of Needed Permission Strings
+        // Camera permission is handled in a callback
+        String[] permissions = new String[]{
+                Manifest.permission.WRITE_EXTERNAL_STORAGE, // INDEX 0
+                Manifest.permission.READ_EXTERNAL_STORAGE   // INDEX 1
+        };
+
+        // Now check to make sure all permissions are granted
+        if (!checkPermissions(permissions)) {
+            // If not granted, show error
+            Toast.makeText(this, "Must allow file saving permissions",
+                    Toast.LENGTH_SHORT).show();
+        } else {
+            // Get our photo folder ready
+            createPhotoFolder();
+
+            // Log
+            Log.i(TAG, "Files Location" + groupPhotoFolder.getAbsolutePath());
+        }
     }
 
     /**
      * Starts next activity to take selfie pic
+     *
      * @param view reference to views state
      */
     public void startSelfieActivity(View view) {
+
         // Don't start next activity if the user hasn't taken a picture
         // and saved the image
         // make sure we have a saved image. Double check also the bitmap
@@ -332,6 +363,11 @@ public class GroupActivity extends AppCompatActivity {
             selfieIntent.putExtra("Bitmap", bitmapJson);
             //Start next activity
             startActivity(selfieIntent);
+        }
+        // See if the save has started
+        else if (saveStarted) {
+            Toast.makeText(getApplicationContext(), "Just a sec while we save your photo",
+                    Toast.LENGTH_SHORT).show();
         }
         // Else image is null, make toast
         else {
@@ -365,6 +401,38 @@ public class GroupActivity extends AppCompatActivity {
     }
 
     /**
+     * Checks to see if read and write file saving permissions have been granted,
+     * if not, prompts user to grant it
+     */
+    private boolean checkPermissions(String[] permissions) {
+        int result = 0; // To be used in IF statement
+        // List for our permission strings
+        List<String> listPermissionsNeeded = new ArrayList<>();
+
+        // Loop through permissions array
+        for (String p : permissions) {
+            // Set result code to the self perimissions check on the applications context and the
+            // certain p permission
+            result = ContextCompat.checkSelfPermission(this, p);
+            // Check if granted
+            if (result != PackageManager.PERMISSION_GRANTED) {
+                // Add to permissions needed list
+                listPermissionsNeeded.add(p);
+            }
+        }
+        // If the list is empty, we got at least one! Call permission request function
+        if (!listPermissionsNeeded.isEmpty()) {
+            // Request permissions, which will call overridden onRequestPermissionsResult function
+            // Give it the key int: 999
+            ActivityCompat.requestPermissions(this,
+                    listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]),
+                    999);
+            return false; // Had to check
+        }
+        return true; // All done
+    }
+
+    /**
      * Prompt user to allow camera permissions if he/she has previously declined to do so
      * @param requestCode What request are we using
      * @param permissions Have permissions been granted
@@ -375,11 +443,23 @@ public class GroupActivity extends AppCompatActivity {
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults); // Call parent
         // IF permission code is the camera permission code
-        if(requestCode == REQUEST_CAMERA_PERMISSION_RESULT){
+        if (requestCode == REQUEST_CAMERA_PERMISSION_RESULT) {
             // If the first result given which will be the camera permission has not been granted
             // Make a toast notifying user
-            if(grantResults[0] != PackageManager.PERMISSION_GRANTED){
+            if (grantResults.length > 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this, "Application won't run without camera services",
+                        Toast.LENGTH_LONG).show();
+            }
+            return;
+        }
+        // Else see if the request code is 999 for file saving permissions
+        if (requestCode == 999) {
+            // check to see if we have more than zero
+            // If permissions were not granted
+            // Make sad toast notifying them of sad disapproval
+            if (grantResults.length > 0 &&
+                    (grantResults[0] != PackageManager.PERMISSION_GRANTED)) {
+                Toast.makeText(this, "Sorry, we need to save files",
                         Toast.LENGTH_LONG).show();
             }
         }
@@ -481,8 +561,12 @@ public class GroupActivity extends AppCompatActivity {
             } catch (CameraAccessException e) {
                 Log.e(TAG, "Camera failed to open");
                 e.printStackTrace();
+                return; // Don't let us get to setting isReady to true
             }
         }
+        // After setup camera and connect camera have successfully been completed, we're ready
+        // to take the picture!
+        isReady = true;
     }
 
     /**
@@ -664,30 +748,16 @@ public class GroupActivity extends AppCompatActivity {
      */
     private void createPhotoFolder() {
         //Creates toast notifying photo folder creation
-        Toast.makeText(getApplicationContext(), "Create Photo Folder called", Toast.LENGTH_SHORT)
-                .show();
         //gets external storage from public directory path (DIRECTORY_PICTURES)
         File imageFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        //if imageFile directory doesn't exist
-        if (!imageFile.mkdirs())
-            Log.e(TAG, "Directory not created");
-
-        Toast.makeText(getApplicationContext(), "External file storage: " +
-                imageFile.getName(), Toast.LENGTH_SHORT)
-                .show();
 
         // Create folder from the abstract pathname created above (imageFile)
         groupPhotoFolder = new File(imageFile, "CameraImages");
-        Toast.makeText(getApplicationContext(), "Photo folder created: " +
-                groupPhotoFolder.getName(), Toast.LENGTH_SHORT)
-                .show();
 
         //if photo folder doesn't exist
         if(!groupPhotoFolder.exists()) {
-
-            //toast notifying of directory creation
-            Toast.makeText(getApplicationContext(), "Mkdir" + groupPhotoFolder.mkdirs(),
-                    Toast.LENGTH_SHORT).show();
+            // Create sub-directory
+            groupPhotoFolder.mkdirs();
         }
     }
 
