@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".GroupActivity">
+    tools:context=".SelfieAcitivity">
 
     <Button
         android:id="@+id/btn_takeSelfie"
@@ -24,6 +24,7 @@
         android:layout_alignParentBottom="true"
         android:layout_marginEnd="80dp"
         android:layout_marginBottom="41dp"
+        android:onClick="startMergeActivity"
         android:text="@string/to_next" />
 
     <TextureView

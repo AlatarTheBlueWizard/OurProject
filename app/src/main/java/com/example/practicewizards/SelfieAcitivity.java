@@ -14,6 +14,7 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
@@ -36,13 +37,17 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 public class SelfieAcitivity extends AppCompatActivity {
     private static final String TAG = "SelfieAcitivty.java";
@@ -51,6 +56,7 @@ public class SelfieAcitivity extends AppCompatActivity {
     private TextureView.SurfaceTextureListener selfieTextListener = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+            Log.d(TAG, "Surface Texture Available");
             setUpCamera(width, height);
             connectCamera();
         }
@@ -67,7 +73,6 @@ public class SelfieAcitivity extends AppCompatActivity {
 
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-
         }
     };
 
@@ -76,6 +81,7 @@ public class SelfieAcitivity extends AppCompatActivity {
     private CameraDevice.StateCallback selfieCameraDeviceStateCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(CameraDevice camera) {
+            Log.d(TAG, "Set opened camera");
             selfieCameraDevice = camera;
             try {
                 startPic();
@@ -106,7 +112,7 @@ public class SelfieAcitivity extends AppCompatActivity {
     private int captureState = STATE_PREVIEW;
 
     // Boolean representing whether picture has been taken or not
-    boolean picTaken = false;
+    private boolean picTaken = false;
     // Bitmap of image
     private Bitmap bitmap;
     // Button to take selfie photo
@@ -115,6 +121,12 @@ public class SelfieAcitivity extends AppCompatActivity {
     private File selfiePhotoFolder;
     // File name for selfie picture
     private String selfiePhotoFileName;
+    // Boolean for whether or not front facing camera can focus
+    private boolean canFocus;
+    // Boolean representing whether or not the camera is ready or not
+    private boolean isReady = false;
+    // Boolean representing whether or not the photo saving has started
+    private boolean saveStarted = false; // start out not starting a save
 
     private HandlerThread selfieBackgroundHandlerThread;
     private Handler selfieBackgroundHandler;
@@ -132,6 +144,7 @@ public class SelfieAcitivity extends AppCompatActivity {
             ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
+                    Log.d(TAG, "Post last image to be saved");
                     // Call our runnable to save photo to storage
                     // Post to the handler the latest image reader
                     selfieBackgroundHandler.post(new ImageSaver(reader.acquireLatestImage()));
@@ -147,6 +160,7 @@ public class SelfieAcitivity extends AppCompatActivity {
         }
         @Override
         public void run() {
+            Log.i(TAG, "Running ImageSaver on last image");
             ByteBuffer byteBuffer = image.getPlanes()[0].getBuffer();
             // Remaining bytes
             byte[] bytes = new byte[byteBuffer.remaining()];
@@ -161,8 +175,6 @@ public class SelfieAcitivity extends AppCompatActivity {
                     Log.e(TAG, "Called create photo folder, it still doesn't exist" +
                             selfiePhotoFolder.mkdirs());
                 fileOutputStream = new FileOutputStream(createPhotoFileName()); // open file
-                Toast.makeText(getApplicationContext(), "File Output Stream Created",
-                        Toast.LENGTH_SHORT).show();
                 fileOutputStream.write(bytes); // Write the bytes to the file
                 Log.d(TAG, "File Name: " + selfiePhotoFileName);
 
@@ -170,6 +182,7 @@ public class SelfieAcitivity extends AppCompatActivity {
                 picTaken = true;
                 // Save the image to outer class
                 bitmap = BitmapFactory.decodeFile(selfiePhotoFileName);
+                Log.i(TAG, "File saved and bitmap created");
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (NullPointerException nullPtr) {
@@ -196,23 +209,34 @@ public class SelfieAcitivity extends AppCompatActivity {
             CameraCaptureSession.CaptureCallback() {
 
                 private void process(CaptureResult captureResult) {
+                    Log.d(TAG, "Processing results");
                     switch (captureState) {
                         case STATE_PREVIEW:
+                            Log.d(TAG, "STATE_PREVIEW");
                             // Do nothing
                             break;
                         case STATE_WAIT_LOCK:
+                            Log.d(TAG, "STATE_WAIT_LOCK");
                             // Set state back to preview to avoid taking tons of pics
                             captureState = STATE_PREVIEW;
 
-                            // Integer for Auto Focus State
-                            Integer afState = captureResult.get(CaptureResult.CONTROL_AF_STATE);
-                            // SUPPORT new and old devices
-                            if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED ||
-                                    afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
-                                Toast.makeText(getApplicationContext(), "AF LOCKED!",
-                                        Toast.LENGTH_SHORT).show();
+                            if (canFocus) {
+                                // Integer for Auto Focus State
+                                Integer afState = captureResult.get(CaptureResult.CONTROL_AF_STATE);
+                                // SUPPORT new and old devices
+                                if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED ||
+                                        afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
+                                    Log.i(TAG, "Start Still Capture Call");
+                                    // we've started our saving process
+                                    saveStarted = true;
+                                    startStillCapture();
+                                    Log.i(TAG, "AF Locked");
+                                }
+                            }
+                            else {
+                                // we've started our saving process
+                                saveStarted = true;
                                 startStillCapture();
-                                Log.i(TAG, "AF Locked");
                             }
                             break;
                     }
@@ -224,10 +248,13 @@ public class SelfieAcitivity extends AppCompatActivity {
                                                @NonNull TotalCaptureResult result) {
                     super.onCaptureCompleted(session, request, result);
                     process(result); // Start Still Capture
+                    Log.i(TAG, "Results Processed");
 
                     // Stop streaming the camera. Hold the state
                     try {
+                        Log.d(TAG, "Stop Repeating");
                         session.stopRepeating(); // Stop repeating requests
+                        Log.d(TAG, "Close the Camera");
                         closeCamera(); // Close camera
                     } catch (CameraAccessException e) {
                         Log.e(TAG, "Error in closing camera");
@@ -267,8 +294,9 @@ public class SelfieAcitivity extends AppCompatActivity {
         selfieTakeImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // Don't call any methods unless camera is ready!
                 // If the picture has not been taken, take it!
-                if (!picTaken) {
+                if (isReady && !picTaken && bitmap == null) {
                     // Call lock focus to begin taking our picture!
                     lockFocus();
                     selfieTakeImageButton.setText(R.string.retake);
@@ -286,13 +314,19 @@ public class SelfieAcitivity extends AppCompatActivity {
                             // Delete the file and set the string filename to null
                             // No more pic taken
                             fDelete.delete();
-                            selfiePhotoFileName = null;
-                            picTaken = false;
+                            selfiePhotoFileName = null; // no string representing a valid file
+                            picTaken = false;    // no picture taken
+                            saveStarted = false; // no file saved
                         }
                     }
+                    picTaken = false;
                     // Pause momentarily and then resume again.
                     onPause();
                     onResume();
+
+                    // forever loop until camera isReady
+                    while (!isReady)
+                        ;
                     // Reset text
                     selfieTakeImageButton.setText(R.string.take_selfie);
                     // Reset bitmap, help Garbage Collector free up the buffer faster
@@ -312,8 +346,26 @@ public class SelfieAcitivity extends AppCompatActivity {
         // make sure we have a saved image. Double check also the bitmap
         if (picTaken && bitmap != null) {
             Log.i(TAG, "Selfie intent starting");
-            Intent selfieIntent = new Intent(this, SelfieAcitivity.class);
-            startActivity(selfieIntent);
+            Intent intent = getIntent();
+            String bitmapJson = intent.getStringExtra("Bitmap");
+
+            Gson gson  = new Gson();
+            Bitmap groupBitmap = gson.fromJson(bitmapJson, Bitmap.class);
+
+            List<Bitmap> bitmaps = new ArrayList<>();
+            bitmaps.add(bitmap);
+            bitmaps.add(groupBitmap);
+
+            String bitmapsJson = gson.toJson(bitmaps);
+
+            Intent mergeIntent = new Intent(this, PhotoTest.class);
+            mergeIntent.putExtra("BitmapArray", bitmapsJson);
+            startActivity(mergeIntent);
+        }
+        // See if the save has started
+        else if (saveStarted) {
+            Toast.makeText(getApplicationContext(), "Just a sec while we save your photo",
+                    Toast.LENGTH_SHORT).show();
         }
         // Else image is null, make toast
         else {
@@ -402,13 +454,15 @@ public class SelfieAcitivity extends AppCompatActivity {
      */
     private void setUpCamera(int width, int height) {
         CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-
+        Log.d(TAG, "Setup Camera");
         try {
             for(String cameraId : cameraManager.getCameraIdList()) {
                 //create an object to store each camera ID's camera characteristics
-                CameraCharacteristics cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId);
+                CameraCharacteristics cameraCharacteristics =
+                        cameraManager.getCameraCharacteristics(cameraId);
                 // See if the Lens facing of found camera is front facing. If it is, we want it!
-                if(cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT) {
+                if(cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) ==
+                        CameraCharacteristics.LENS_FACING_FRONT) {
                     //Set the image size to be the width and height of the texture view
                     imageSize = new Size(selfieView.getWidth(), selfieView.getHeight());
                     // image reader with selfie view's width, height, and maxImages is just 1
@@ -419,6 +473,14 @@ public class SelfieAcitivity extends AppCompatActivity {
                             selfieBackgroundHandler);
                     //set the Camera Device ID to the selected camera
                     selfieCameraDeviceId = cameraId; //create a parameter for this
+
+                    // See if Auto Focus works on this camera
+                    int[] afAvailableModes = cameraCharacteristics.
+                            get(CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES);
+                    if (afAvailableModes[0] == CameraMetadata.CONTROL_AE_MODE_OFF) {
+                        Log.i(TAG, "No Focus on Camera");
+                        canFocus = false;
+                    }
                     return;
                 }
             }
@@ -434,7 +496,7 @@ public class SelfieAcitivity extends AppCompatActivity {
     private void connectCamera() {
         //create a camera manager object and retrieve its service context
         CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-
+        Log.d(TAG, "Connect Camera");
         //check if android sdk version supports Camera 2 API
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
             //check if user granted permission to access camera
@@ -442,6 +504,7 @@ public class SelfieAcitivity extends AppCompatActivity {
                 try {
                     //open the camera
                     cameraManager.openCamera(selfieCameraDeviceId, selfieCameraDeviceStateCallback, selfieBackgroundHandler);
+                    Log.i(TAG, "Camera Opened");
                 } catch (CameraAccessException e) {
                     Log.e(TAG, "Camera failed to open");
                     e.printStackTrace();
@@ -460,8 +523,12 @@ public class SelfieAcitivity extends AppCompatActivity {
             } catch (CameraAccessException e) {
                 Log.e(TAG, "Camera failed to open");
                 e.printStackTrace();
+                return; // Don't let us get to setting isReady to true
             }
         }
+        // After setup camera and connect camera have successfully been completed, we're ready
+        // to take the picture!
+        isReady = true;
     }
 
     /**
@@ -477,6 +544,7 @@ public class SelfieAcitivity extends AppCompatActivity {
      * @throws CameraAccessException
      */
     private void startPic() throws CameraAccessException {
+        Log.d(TAG, "Start Pic");
         // Set textures
         SurfaceTexture surfaceTexture = selfieView.getSurfaceTexture();
         surfaceTexture.setDefaultBufferSize(selfieView.getWidth(), selfieView.getHeight());
@@ -497,6 +565,7 @@ public class SelfieAcitivity extends AppCompatActivity {
                  */
                 @Override
                 public void onConfigured(CameraCaptureSession session) {
+                    Log.d(TAG, "Configure Capture Session");
                     previewCaptureSession = session; // Set member
                     // Try to set repeating requests
                     try {
@@ -510,7 +579,8 @@ public class SelfieAcitivity extends AppCompatActivity {
 
                 @Override
                 public void onConfigureFailed(CameraCaptureSession session) {
-                    Toast.makeText(getApplicationContext(), "Unable to setup camera preview", Toast.LENGTH_LONG).show();
+                    Toast.makeText(getApplicationContext(), "Unable to setup camera preview",
+                            Toast.LENGTH_LONG).show();
                 }
 
                 @Override
@@ -532,6 +602,7 @@ public class SelfieAcitivity extends AppCompatActivity {
      * Picture will be taken immediately after.
      */
     private void lockFocus() {
+        Log.d(TAG, "Lock Focus()");
         // Set our CaptureRequestBuilder to lock the focus
         selfieCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
                 CaptureRequest.CONTROL_AF_TRIGGER_START);
@@ -541,6 +612,7 @@ public class SelfieAcitivity extends AppCompatActivity {
         captureState = STATE_WAIT_LOCK;
         // Try to capture the image
         try {
+            Log.d(TAG, "Capture Picture");
             // Put it on the background thread
             previewCaptureSession.capture(selfieCaptureRequestBuilder.build(), previewCaptureCallback,
                     selfieBackgroundHandler);
@@ -596,6 +668,7 @@ public class SelfieAcitivity extends AppCompatActivity {
      * has started.
      */
     private void startStillCapture() {
+        Log.d(TAG, "Start Still Capture()");
         // Try to create a CaptureCall back
         try {
             // Use the still capture template for our capture request builder
@@ -605,6 +678,7 @@ public class SelfieAcitivity extends AppCompatActivity {
                     selfieCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             selfieCaptureRequestBuilder.addTarget(imageReader.getSurface());
             selfieCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, 90);
+            Log.d(TAG, "Target Set");
 
             // Create stillCaptureCallback
             CameraCaptureSession.CaptureCallback stillCaptureCallback = new
@@ -617,6 +691,7 @@ public class SelfieAcitivity extends AppCompatActivity {
                             super.onCaptureStarted(session, request, timestamp, frameNumber);
                             // Try to create a unique photo file
                             try {
+                                Log.d(TAG, "call createPhotoFileName() in stillCapCallback");
                                 createPhotoFileName();
                             } catch (IOException e) {
                                 Log.e(TAG, "Error in calling createPhotoFileName()");
@@ -624,6 +699,7 @@ public class SelfieAcitivity extends AppCompatActivity {
                             }
                         }
                     };
+            Log.d(TAG, "Begin Capture");
             // Call capture! Give it the builder and the stillCaptureCallback
             previewCaptureSession.capture(selfieCaptureRequestBuilder.build(), stillCaptureCallback,
                     null); // Already on the background thread, give thread null
@@ -639,31 +715,18 @@ public class SelfieAcitivity extends AppCompatActivity {
      * @return selfiePhotoFileName will be returned
      */
     private void createPhotoFolder() {
-        //Creates toast notifying photo folder creation
-        Toast.makeText(getApplicationContext(), "Create Photo Folder called", Toast.LENGTH_SHORT)
-                .show();
         //gets external storage from public directory path (DIRECTORY_PICTURES)
         File imageFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
         //if imageFile directory doesn't exist
         if (!imageFile.mkdirs())
             Log.e(TAG, "Directory not created");
 
-        Toast.makeText(getApplicationContext(), "External file storage: " +
-                imageFile.getName(), Toast.LENGTH_SHORT)
-                .show();
-
         // Create folder from the abstract pathname created above (imageFile)
         selfiePhotoFolder = new File(imageFile, "CameraImages");
-        Toast.makeText(getApplicationContext(), "Photo folder created: " +
-                selfiePhotoFolder.getName(), Toast.LENGTH_SHORT)
-                .show();
 
         //if photo folder doesn't exist
         if(!selfiePhotoFolder.exists()) {
-
-            //toast notifying of directory creation
-            Toast.makeText(getApplicationContext(), "Mkdir" + selfiePhotoFolder.mkdirs(),
-                    Toast.LENGTH_SHORT).show();
+            selfiePhotoFolder.mkdirs(); // Make sub-directory under parent
         }
     }
 
