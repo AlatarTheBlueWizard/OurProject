@@ -33,24 +33,5 @@ public class ExampleUnitTest {
         cameraId = manageCameras.open(false);
         assert(cameraId != null);
     }
-
-    // Going to test getters and setters because we I don't have much idea currently how to
-    // unit test a camera
-
-    @Test
-    public void test_camera_getters_setters() {
-        // Create our camera object, rear facing
-        Camera camera = new Camera(true);
-        camera.openCamera();
-        assert(camera.getCameraDevice() != null);
-    }
-
-    @Test
-    public void test_manager_getters_setters() {
-        // Create camera manager
-        ManageCameras manageCameras = new ManageCameras();
-        manageCameras.open(true);
-        assert(manageCameras.getRear() != null);
-    }
     */
 }
