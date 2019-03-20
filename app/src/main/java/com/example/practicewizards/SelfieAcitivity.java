@@ -353,8 +353,8 @@ public class SelfieAcitivity extends AppCompatActivity {
             Bitmap groupBitmap = gson.fromJson(bitmapJson, Bitmap.class);
 
             List<Bitmap> bitmaps = new ArrayList<>();
-            bitmaps.add(bitmap);
             bitmaps.add(groupBitmap);
+            bitmaps.add(bitmap);
 
             String bitmapsJson = gson.toJson(bitmaps);
 
