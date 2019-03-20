@@ -10,16 +10,7 @@ import static org.junit.Assert.assertEquals;
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
 public class ExampleUnitTest {
-/**    @Test
-    public void addition_isCorrect() {
-        assertEquals(4, 2 + 2);
-    }
-
-    @Test
-    public void multiply_isCorrect() {
-        assertEquals(10, 5*2 );
-    }
-
+/**
     @Test
     public void are_files_saved() {
 
