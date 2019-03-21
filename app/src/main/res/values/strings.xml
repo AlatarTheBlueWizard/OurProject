@@ -8,4 +8,6 @@
     <string name="to_next">NEXT</string>
     <string name="error_pic_not_taken">Sorry! Must take group pic first</string>
     <string name="retake">Retake</string>
+    <string name="scale_down">-</string>
+    <string name="scale_up">+</string>
 </resources>

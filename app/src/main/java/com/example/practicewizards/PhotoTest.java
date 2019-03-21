@@ -18,6 +18,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 
 import com.google.gson.Gson;
@@ -33,6 +34,12 @@ public class PhotoTest extends AppCompatActivity {
     private static final String TAG = "MergeActivity";
     private int selfieResSize = 1;
     private static final int SELFIE_SIZE_THRESHOLD = 4;
+    // Keep track of selfie file name
+    private String selfieFileName;
+    private ImageView selfieTestView;
+    private ImageView groupTestView;
+    // Boolean representing whether scaleUp or scaleDown button is visible
+    private boolean isInvisible; // Put state into bool var to speed performance
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,13 +50,13 @@ public class PhotoTest extends AppCompatActivity {
         Intent intent = getIntent();
         String bitmapsJson = intent.getStringExtra("BitmapArray");
         String groupFileName = intent.getStringExtra("GroupFileName");
-        String selfieFileName = intent.getStringExtra("SelfieFileName");
+        selfieFileName = intent.getStringExtra("SelfieFileName");
 
         Type listType = new TypeToken<ArrayList<Bitmap>>(){}.getType();
         List<Bitmap> bitmaps = new Gson().fromJson(bitmapsJson, listType);
 
-        ImageView groupTestView = (ImageView)findViewById(R.id.groupTestView);
-        ImageView selfieTestView = (ImageView)findViewById(R.id.selfieTestView);
+        groupTestView = (ImageView)findViewById(R.id.groupTestView);
+        selfieTestView = (ImageView)findViewById(R.id.selfieTestView);
 
         // Group photo is first because it was taken first
         Bitmap group  = bitmaps.get(0);
@@ -72,20 +79,37 @@ public class PhotoTest extends AppCompatActivity {
         // Use picasso to scale down and maintain aspect ratio
         Picasso.with(this)
                 .load(new File(selfieFileName))
-                .resizeDimen(R.dimen.size4, R.dimen.size4)
+                .resizeDimen(R.dimen.size1, R.dimen.size1)
                 .onlyScaleDown()
                 .into(selfieTestView);
 
 
-        // Try resizing the selfie
-        // Give filter true, do bilinear filtering to make image quality as retained as possible
-        // Give the dstWidth and dstHeight the scaling math
-        Bitmap resizedSelfie = Bitmap.createScaledBitmap(selfie,
-                selfie.getWidth() / 4,
-                selfie.getHeight() / 2,
-                true);
         //groupTestView.setImageBitmap(group);
         //selfieTestView.setImageBitmap(resizedSelfie);
+
+        // Set scaleDown button to invisible by default, can't scale down from size1. No size0.
+        findViewById(R.id.scaleDown).setVisibility(Button.INVISIBLE);
+        // One button is invisible
+        isInvisible = true;
+    }
+
+    /**
+     * Returns a resource representing the current dp the image should be scaled to
+     * @return
+     */
+    private int getCurrentDimension() {
+        // Switch for speed the selfieResSize
+        switch (selfieResSize) {
+            case 1:
+                return R.dimen.size1;
+            case 2:
+                return R.dimen.size2;
+            case 3:
+                return R.dimen.size3;
+            case 4:
+                return R.dimen.size4;
+        }
+        return 0; // error
     }
 
     /**
@@ -94,13 +118,82 @@ public class PhotoTest extends AppCompatActivity {
      * @param view
      */
     public void scaleUp(View view) {
-        // If the size is still less than the max selfie size, increment up
-        if (selfieResSize < SELFIE_SIZE_THRESHOLD) {
-            selfieResSize++;
+        // See if scaleDown button is invisible. If so, set it to be visible
+        if (isInvisible) {
+            // We're in scaleUp mode so only scaleDown button should be visible
+            findViewById(R.id.scaleDown).setVisibility(Button.VISIBLE);
+            // We set button to visible
+            isInvisible = false;
         }
-        // Else
+
+        // If size + 1 would not equal the max selfie size, increment up
+        if (++selfieResSize < SELFIE_SIZE_THRESHOLD) {
+            // Use picasso to scale down and maintain aspect ratio
+            Picasso.with(this)
+                    .load(new File(selfieFileName))
+                    .resizeDimen(getCurrentDimension(), getCurrentDimension())
+                    .onlyScaleDown()
+                    .into(selfieTestView);
+        }
+        // Else increment up and set button to invisible so user doesn't press it again
+        else {
+            // Use picasso to scale down and maintain aspect ratio
+            Picasso.with(this)
+                    .load(new File(selfieFileName))
+                    .resizeDimen(getCurrentDimension(), getCurrentDimension())
+                    .onlyScaleDown()
+                    .into(selfieTestView);
+
+            Button scaleUpButton = findViewById(R.id.scaleUp);
+            // Set to invisible
+            scaleUpButton.setVisibility(Button.INVISIBLE);
+            // A button is invisible, set it to true
+            isInvisible = true;
+        }
     }
 
+    /**
+     * Scales the selfie image down to the previous size dimension found in R.dimen. If limit is reached,
+     * button is set to invisible.
+     * @param view
+     */
+    public void scaleDown(View view) {
+        // See if scaleDown button is invisible. If so, set it to be visible
+        if (isInvisible) {
+            // We're in scaleDown mode so only scaleUp button should be visible
+            // The user can scale up after at least one scaleDown
+            findViewById(R.id.scaleUp).setVisibility(Button.VISIBLE);
+            // We set button to visible
+            isInvisible = false;
+        }
+
+        // If size - 1 would not equal 1, decrement down
+        if (--selfieResSize > 1) {
+            // Use picasso to scale down and maintain aspect ratio
+            Picasso.with(this)
+                    .load(new File(selfieFileName))
+                    .resizeDimen(getCurrentDimension(), getCurrentDimension())
+                    .onlyScaleDown()
+                    .into(selfieTestView);
+        }
+        // Else decrement down and set button to invisible so user doesn't press it again
+        else {
+            // Use picasso to scale down and maintain aspect ratio
+            Picasso.with(this)
+                    .load(new File(selfieFileName))
+                    .resizeDimen(getCurrentDimension(), getCurrentDimension())
+                    .onlyScaleDown()
+                    .into(selfieTestView);
+
+            Button scaleUpButton = findViewById(R.id.scaleDown);
+            // Set to invisible
+            scaleUpButton.setVisibility(Button.INVISIBLE);
+            // A button is invisible, set it to true
+            isInvisible = true;
+        }
+    }
+
+    /*
     //blend function using paint
     //May need to create new drawables for colors (errors)
     private Bitmap getARGBImage() {
@@ -162,4 +255,5 @@ public class PhotoTest extends AppCompatActivity {
 
         return result;
     }
+    */
 }
