@@ -17,6 +17,7 @@ import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.media.Image;
 import android.media.ImageReader;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v7.app.AppCompatActivity;
@@ -34,8 +35,13 @@ import com.squareup.picasso.Picasso;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Type;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class PhotoTest extends AppCompatActivity {
@@ -55,6 +61,10 @@ public class PhotoTest extends AppCompatActivity {
     // Thread Handling
     private HandlerThread mergeBackgroundThread;
     private Handler       mergeBackgroundHandler;
+
+    // File saving for our selfieBitmap
+    private String mergedSelfieFileName;
+    private File mergedSelfieFileFolder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,16 +102,26 @@ public class PhotoTest extends AppCompatActivity {
         Log.d(TAG, "Group Path: " + groupFileName);
         Log.d(TAG, "Selfie Path: " + selfieFileName);
 
+        createBitmapFolder();
+        try {
+            FileOutputStream fOut = new FileOutputStream(mergedSelfieFileName);
+            Bitmap mergedSelfieBitmap = createRedGrayBitmap(selfieBitmap);
+           // mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
+        } catch (FileNotFoundException e) {
+            Log.e(TAG, "FILE NOT FOUND");
+            e.printStackTrace();
+        }
+
         // Use picasso to scale down and maintain aspect ratio
-        //Picasso.with(this)
-          //      .load(new File(selfieFileName))
-            //    .resizeDimen(R.dimen.size1, R.dimen.size1)
-              //  .onlyScaleDown()
-                //.into(selfieTestView);
+        Picasso.with(this)
+                .load(new File(selfieFileName))
+                .resizeDimen(R.dimen.size1, R.dimen.size1)
+                .onlyScaleDown()
+                .into(selfieTestView);
 
 
         //groupTestView.setImageBitmap(group);
-        selfieTestView.setImageBitmap(createAlphaGrayBitmap(selfieBitmap));
+        selfieTestView.setImageBitmap(createGreenGrayBitmap(selfieBitmap));
 
 
         // Set scaleDown button to invisible by default, can't scale down from size1. No size0.
@@ -215,15 +235,6 @@ public class PhotoTest extends AppCompatActivity {
     //May need to create new drawables for colors (errors)
     private Bitmap getARGBImage() {
         // Add selfiebitmap to drawable
-        Intent intent = getIntent();
-        String bitmapsJson = intent.getStringExtra("BitmapArray");
-        String groupFileName = intent.getStringExtra("GroupFileName");
-        selfieFileName = intent.getStringExtra("SelfieFileName");
-
-        Type listType = new TypeToken<ArrayList<Bitmap>>(){}.getType();
-        List<Bitmap> bitmaps = new Gson().fromJson(bitmapsJson, listType);
-
-        Bitmap selfieBitmap = bitmaps.get(1);
 
         // Create black image
         BitmapFactory.Options opt = new BitmapFactory.Options();
@@ -413,6 +424,43 @@ public class PhotoTest extends AppCompatActivity {
         return createGrayScale(bitmap);
     }
 
+    /**
+     * Creates a green grayscale selfie bitmap. Uses the createGrayScale method after the red
+     * channeled version of the selfie bitmap is created. We need a gray scaled versions of the red
+     * channel of the selfie photo.
+     */
+    public Bitmap createGreenGrayBitmap(Bitmap source) {
+        // Create bitmap to be returned from its width and height and its configuration
+        Bitmap bitmap = Bitmap.createBitmap(source.getWidth(), source.getHeight(),
+                source.getConfig());
+
+        // Create ARGB variables
+        // Disclude G and B, we want Red
+        int alpha;
+        int green;
+
+
+        /*
+        Loop through all the pixels and retrieve its pixel amount
+         */
+        for (int y = 0; y < source.getHeight(); y++) {
+            for (int x = 0; x < source.getWidth(); x++) {
+                // Retrieve pixel amount
+                int pixel = source.getPixel(x, y);
+
+                // Retrieves the color channels for alpha and red of the retrieved
+                // pixel integer in ARGB form
+                alpha = Color.alpha(pixel); // A
+                green = Color.green(pixel);     // R
+
+                // sets a pixel (x,y) on output bitmap to ARGB
+                bitmap.setPixel(x, y, Color.argb(alpha, 0, green, 0));
+            }
+        }
+        // Return the gray scaled version of the red bitmap
+        return createGrayScale(bitmap);
+    }
+
 
     /**
      * Creates a grayscaled image based on the input source bitmap.
@@ -538,5 +586,60 @@ public class PhotoTest extends AppCompatActivity {
             mergeBackgroundThread.start();
             mergeBackgroundHandler = new Handler(mergeBackgroundThread.getLooper());
         }
+    }
+
+    /**
+     * Contains photoFolder creation method and file name of the photo taken
+     * @return selfiePhotoFileName will be returned
+     */
+    private void createBitmapFolder() {
+        //gets external storage from public directory path (DIRECTORY_PICTURES)
+        File imageFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        //if imageFile directory doesn't exist
+        if (!imageFile.mkdirs())
+            Log.e(TAG, "Directory not created");
+
+        // Create folder from the abstract pathname created above (imageFile)
+        mergedSelfieFileFolder = new File(imageFile, "CameraImages");
+
+        //if photo folder doesn't exist
+        if(!mergedSelfieFileFolder.exists()) {
+            mergedSelfieFileFolder.mkdirs(); // Make sub-directory under parent
+        }
+    }
+
+    /**
+     * Method creates name of photo file, adds additional date format and timestamp.
+     * if photo folder does not exist, notifies of its non existence, also creates a temp
+     * file that is prepended with ".jpg" and gets the path from the photo file.
+     * @throws IOException if working with file fails
+     */
+    private String createPhotoFileName()throws IOException {
+        //adds a date format for the timestamp of the photo taken
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String prepend = "PHOTO_" + timeStamp + "_";
+        try {
+            //if photo folder does not exist...
+            if (!mergedSelfieFileFolder.exists()) {
+                throw new NullPointerException("Photo Folder does not exist");
+            }
+        }
+        catch (NullPointerException folderError) {
+            //will notify of folders non-existence
+            Log.e(TAG, "Folder non-existent");
+            folderError.printStackTrace();
+        }
+
+        //creates temporary photo file with ".jpg" suffix which is then prepended with
+        //existing photo folder.
+        // Don't create to temporary files if selfiePhotoFileName already exists
+        if (mergedSelfieFileName == null) {
+            Log.i(TAG, "File Name doesn't exist. Create it.");
+            File photoFile = File.createTempFile(prepend, ".jpg", mergedSelfieFileFolder);
+            mergedSelfieFileName = photoFile.getAbsolutePath();
+            Log.i(TAG, mergedSelfieFileName);
+        }
+        //return photo filename
+        return mergedSelfieFileName;
     }
 }
