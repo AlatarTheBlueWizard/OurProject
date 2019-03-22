@@ -7,4 +7,5 @@
     <color name="blue" >#FF0000FF</color>
     <color name="green">#FF00FF00</color>
     <color name="alpha">#00FFFFFF</color>
+    <color name="black">#FF000000</color>
 </resources>
