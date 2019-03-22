@@ -9,6 +9,7 @@ import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -69,6 +70,7 @@ public class PhotoTest extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        startBackgroundThread();
         setContentView(R.layout.activity_photo_test);
         // On resume will be called after this to start the background thread
 
@@ -79,7 +81,7 @@ public class PhotoTest extends AppCompatActivity {
         selfieFileName = intent.getStringExtra("SelfieFileName");
 
         Type listType = new TypeToken<ArrayList<Bitmap>>(){}.getType();
-        List<Bitmap> bitmaps = new Gson().fromJson(bitmapsJson, listType);
+        final List<Bitmap> bitmaps = new Gson().fromJson(bitmapsJson, listType);
 
         groupTestView = (ImageView)findViewById(R.id.groupTestView);
         selfieTestView = (ImageView)findViewById(R.id.selfieTestView);
@@ -101,27 +103,54 @@ public class PhotoTest extends AppCompatActivity {
         Log.d(TAG, "Selfie height: " + selfieBitmap.getHeight());
         Log.d(TAG, "Group Path: " + groupFileName);
         Log.d(TAG, "Selfie Path: " + selfieFileName);
-
-        createBitmapFolder();
         try {
-            FileOutputStream fOut = new FileOutputStream(mergedSelfieFileName);
-            Bitmap mergedSelfieBitmap = createRedGrayBitmap(selfieBitmap);
-           // mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
-        } catch (FileNotFoundException e) {
-            Log.e(TAG, "FILE NOT FOUND");
+            createBitmapFolder();
+            createPhotoFileName();
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to create Photo File Name");
             e.printStackTrace();
         }
+        mergeBackgroundHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                FileOutputStream fOut = null;
+                try {
+                    fOut = new FileOutputStream(mergedSelfieFileName);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                Bitmap mergedSelfieBitmap = bitmapOverlayToCenter(bitmaps.get(0), bitmaps.get(1));
+                mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
+                try {
+                    fOut.flush();
+                    fOut.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
-        // Use picasso to scale down and maintain aspect ratio
-        Picasso.with(this)
-                .load(new File(selfieFileName))
-                .resizeDimen(R.dimen.size1, R.dimen.size1)
-                .onlyScaleDown()
-                .into(selfieTestView);
+        mergeBackgroundHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                // Use picasso to scale down and maintain aspect ratio
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Picasso.with(getApplicationContext())
+                                .load(new File(mergedSelfieFileName))
+                                .resizeDimen(R.dimen.size1, R.dimen.size1)
+                                .onlyScaleDown()
+                                .into(selfieTestView);
+                    }
+                });
+            }
+        });
+
 
 
         //groupTestView.setImageBitmap(group);
-        selfieTestView.setImageBitmap(createGreenGrayBitmap(selfieBitmap));
+//        selfieTestView.setImageBitmap(createGreenGrayBitmap(selfieBitmap));
 
 
         // Set scaleDown button to invisible by default, can't scale down from size1. No size0.
@@ -167,7 +196,7 @@ public class PhotoTest extends AppCompatActivity {
         if (++selfieResSize < SELFIE_SIZE_THRESHOLD) {
             // Use picasso to scale down and maintain aspect ratio
             Picasso.with(this)
-                    .load(new File(selfieFileName))
+                    .load(new File(mergedSelfieFileName))
                     .resizeDimen(getCurrentDimension(), getCurrentDimension())
                     .onlyScaleDown()
                     .into(selfieTestView);
@@ -176,7 +205,7 @@ public class PhotoTest extends AppCompatActivity {
         else {
             // Use picasso to scale down and maintain aspect ratio
             Picasso.with(this)
-                    .load(new File(selfieFileName))
+                    .load(new File(mergedSelfieFileName))
                     .resizeDimen(getCurrentDimension(), getCurrentDimension())
                     .onlyScaleDown()
                     .into(selfieTestView);
@@ -208,7 +237,7 @@ public class PhotoTest extends AppCompatActivity {
         if (--selfieResSize > 1) {
             // Use picasso to scale down and maintain aspect ratio
             Picasso.with(this)
-                    .load(new File(selfieFileName))
+                    .load(new File(mergedSelfieFileName))
                     .resizeDimen(getCurrentDimension(), getCurrentDimension())
                     .onlyScaleDown()
                     .into(selfieTestView);
@@ -217,7 +246,7 @@ public class PhotoTest extends AppCompatActivity {
         else {
             // Use picasso to scale down and maintain aspect ratio
             Picasso.with(this)
-                    .load(new File(selfieFileName))
+                    .load(new File(mergedSelfieFileName))
                     .resizeDimen(getCurrentDimension(), getCurrentDimension())
                     .onlyScaleDown()
                     .into(selfieTestView);
@@ -230,11 +259,10 @@ public class PhotoTest extends AppCompatActivity {
         }
     }
 
-    /*
+
     //blend function using paint
     //May need to create new drawables for colors (errors)
     private Bitmap getARGBImage() {
-        // Add selfiebitmap to drawable
 
         // Create black image
         BitmapFactory.Options opt = new BitmapFactory.Options();
@@ -248,9 +276,14 @@ public class PhotoTest extends AppCompatActivity {
         // with the photos we do have.
 
         // Problem is these decode functions below...
-        // Should create red version of selfie photo
+        //Bitmaps Red, Green, Blue, and AlphaGray
+        Bitmap red = createRedGrayBitmap(selfieBitmap);
+        Bitmap green = createGreenGrayBitmap(selfieBitmap);
+        Bitmap blue = createBlueGrayBitmap(selfieBitmap);
+        Bitmap alphaGray = createGrayScale(selfieBitmap);
 
-        /*
+
+
         int width = red.getWidth();   // failed because red is null
         int height = red.getHeight(); // same
 
@@ -262,10 +295,10 @@ public class PhotoTest extends AppCompatActivity {
 
 
 
-/*
+
         // Get regular image back
         Paint redP = new Paint();
-        redP.setShader(new BitmapShader(, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
+        redP.setShader(new BitmapShader(red, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
         redP.setColorFilter(new PorterDuffColorFilter(Color.RED, PorterDuff.Mode.MULTIPLY));
         redP.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SCREEN));
 
@@ -283,9 +316,9 @@ public class PhotoTest extends AppCompatActivity {
         c.drawRect(0, 0, width, height, redP);
         c.drawRect(0, 0, width, height, greenP);
         c.drawRect(0, 0, width, height, blueP);
-        */
+
         // Done!
-/*
+
         // Create alpha photo, fully opaque, and make the background transparent
         Bitmap alpha = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         int[] alphaPix = new int[width * height];
@@ -312,7 +345,6 @@ public class PhotoTest extends AppCompatActivity {
         // Return created bitmap
         return result;
     }
-    */
 
 
     /**
@@ -641,5 +673,21 @@ public class PhotoTest extends AppCompatActivity {
         }
         //return photo filename
         return mergedSelfieFileName;
+    }
+
+    public Bitmap bitmapOverlayToCenter(Bitmap bitmap1, Bitmap overlayBitmap) {
+        int bitmap1Width = bitmap1.getWidth();
+        int bitmap1Height = bitmap1.getHeight();
+        int bitmap2Width = overlayBitmap.getWidth() / 3;
+        int bitmap2Height = overlayBitmap.getHeight() / 3;
+
+        float marginLeft = (float) (bitmap1Width * 0.5 - bitmap2Width * 0.5);
+        float marginTop = (float) (bitmap1Height * 0.5 - bitmap2Height * 0.5);
+
+        Bitmap finalBitmap = Bitmap.createBitmap(bitmap1Width, bitmap1Height, bitmap1.getConfig());
+        Canvas canvas = new Canvas(finalBitmap);
+        canvas.drawBitmap(bitmap1, new Matrix(), null);
+        canvas.drawBitmap(overlayBitmap, marginLeft, marginTop, null);
+        return finalBitmap;
     }
 }
