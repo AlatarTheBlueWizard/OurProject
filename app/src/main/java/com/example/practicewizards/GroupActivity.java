@@ -165,9 +165,6 @@ public class GroupActivity extends AppCompatActivity {
             try {
                 // createPhotoFolder() should have already been called
                 Log.i(TAG, "Write the photo to the photo filename");
-                if (!groupPhotoFolder.exists())
-                    Log.e(TAG, "Called create photo folder, it still doesn't exist" +
-                            groupPhotoFolder.mkdirs());
                 fileOutputStream = new FileOutputStream(createPhotoFileName()); // open file
                 fileOutputStream.write(bytes); // Write the bytes to the file
                 Log.d(TAG, "File Name: " + groupPhotoFileName);
@@ -361,6 +358,8 @@ public class GroupActivity extends AppCompatActivity {
             Intent selfieIntent = new Intent(this, SelfieAcitivity.class);
             //Add JSON string to intent
             selfieIntent.putExtra("Bitmap", bitmapJson);
+            //Add filename for group photo
+            selfieIntent.putExtra("GroupFileName", groupPhotoFileName);
             //Start next activity
             startActivity(selfieIntent);
         }

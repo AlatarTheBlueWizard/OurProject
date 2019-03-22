@@ -346,20 +346,26 @@ public class SelfieAcitivity extends AppCompatActivity {
         // make sure we have a saved image. Double check also the bitmap
         if (picTaken && bitmap != null) {
             Log.i(TAG, "Selfie intent starting");
+            // Get intent that created this activity to retrieve bitmap and group filename
             Intent intent = getIntent();
             String bitmapJson = intent.getStringExtra("Bitmap");
+            String groupFileName = intent.getStringExtra("GroupFileName");
+
 
             Gson gson  = new Gson();
             Bitmap groupBitmap = gson.fromJson(bitmapJson, Bitmap.class);
 
+            // Create list of bitmaps to be passed
             List<Bitmap> bitmaps = new ArrayList<>();
-            bitmaps.add(groupBitmap);
-            bitmaps.add(bitmap);
+            bitmaps.add(0, groupBitmap); // Index 0
+            bitmaps.add(1, bitmap);      // Index 1
 
             String bitmapsJson = gson.toJson(bitmaps);
 
             Intent mergeIntent = new Intent(this, PhotoTest.class);
-            mergeIntent.putExtra("BitmapArray", bitmapsJson);
+            mergeIntent.putExtra("BitmapArray", bitmapsJson);    // Add bitmaps
+            mergeIntent.putExtra("GroupFileName",groupFileName); // Add group photo
+            mergeIntent.putExtra("SelfieFileName", selfiePhotoFileName); // Add selfie photo
             startActivity(mergeIntent);
         }
         // See if the save has started
@@ -677,7 +683,7 @@ public class SelfieAcitivity extends AppCompatActivity {
             selfieCaptureRequestBuilder =
                     selfieCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             selfieCaptureRequestBuilder.addTarget(imageReader.getSurface());
-            selfieCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, 90);
+            selfieCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, 0);
             Log.d(TAG, "Target Set");
 
             // Create stillCaptureCallback

@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/gradient1"
     tools:context=".PhotoTest">
 
     <ImageView
-        android:id="@+id/resultView"
+        android:id="@+id/groupTestView"
         android:layout_width="259dp"
         android:layout_height="191dp"
         android:layout_marginStart="76dp"
@@ -18,4 +17,44 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-</android.support.constraint.ConstraintLayout>
+    <ImageView
+        android:id="@+id/selfieTestView"
+        android:layout_width="match_parent"
+        android:layout_height="298dp"
+        android:layout_marginStart="76dp"
+        android:layout_marginEnd="76dp"
+        android:layout_marginBottom="272dp"
+        android:scaleType="center"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.565"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/scaleUp"
+        android:layout_width="30dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/circle_button"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="133dp"
+        android:layout_marginBottom="62dp"
+        android:onClick="scaleUp"
+        android:text="@string/scale_up" />
+
+    <Button
+        android:id="@+id/scaleDown"
+        android:layout_width="39dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/circle_button"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="119dp"
+        android:layout_marginEnd="90dp"
+        android:layout_marginBottom="63dp"
+        android:onClick="scaleDown"
+        android:text="@string/scale_down"
+        android:visibility="visible" />
+
+
+</RelativeLayout>
