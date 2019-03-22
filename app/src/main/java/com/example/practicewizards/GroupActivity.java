@@ -492,10 +492,8 @@ public class GroupActivity extends AppCompatActivity {
 
     /**
      * Creates a Camera Manager Object and iterates through its CameraIdList to determine which camera ID is needed to connect the camera
-     * @param width
-     * Uses the the width of the texture view to determine image size width
-     * @param height
-     * Uses the the height of the texture view to determine image size height
+     * @param width Uses the the width of the texture view to determine image size width
+     * @param height Uses the the height of the texture view to determine image size height
      */
     private void setUpCamera(int width, int height) {
         //create a camera manager object and retrieve its service context

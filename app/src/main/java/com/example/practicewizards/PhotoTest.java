@@ -101,7 +101,7 @@ public class PhotoTest extends AppCompatActivity {
 
 
         //groupTestView.setImageBitmap(group);
-        selfieTestView.setImageBitmap(createRedGrayBitmap(selfieBitmap));
+        selfieTestView.setImageBitmap(createAlphaGrayBitmap(selfieBitmap));
 
 
         // Set scaleDown button to invisible by default, can't scale down from size1. No size0.
@@ -215,6 +215,15 @@ public class PhotoTest extends AppCompatActivity {
     //May need to create new drawables for colors (errors)
     private Bitmap getARGBImage() {
         // Add selfiebitmap to drawable
+        Intent intent = getIntent();
+        String bitmapsJson = intent.getStringExtra("BitmapArray");
+        String groupFileName = intent.getStringExtra("GroupFileName");
+        selfieFileName = intent.getStringExtra("SelfieFileName");
+
+        Type listType = new TypeToken<ArrayList<Bitmap>>(){}.getType();
+        List<Bitmap> bitmaps = new Gson().fromJson(bitmapsJson, listType);
+
+        Bitmap selfieBitmap = bitmaps.get(1);
 
         // Create black image
         BitmapFactory.Options opt = new BitmapFactory.Options();
@@ -326,6 +335,78 @@ public class PhotoTest extends AppCompatActivity {
 
                 // sets a pixel (x,y) on output bitmap to ARGB
                 bitmap.setPixel(x, y, Color.argb(alpha, red, 0, 0));
+            }
+        }
+        // Return the gray scaled version of the red bitmap
+        return createGrayScale(bitmap);
+    }
+
+    /**
+     * Creates a blue grayscale selfie bitmap. Uses the createGrayScale method after the blue
+     * channeled version of the selfie bitmap is created. We need a gray scaled versions of the blue
+     * channel of the selfie photo.
+     */
+    public Bitmap createBlueGrayBitmap(Bitmap source) {
+        // Create bitmap to be returned from its width and height and its configuration
+        Bitmap bitmap = Bitmap.createBitmap(source.getWidth(), source.getHeight(),
+                source.getConfig());
+
+        // Create ARGB variables
+        // Disclude G and B, we want Red
+        int alpha;
+        int blue;
+
+
+        /*
+        Loop through all the pixels and retrieve its pixel amount
+         */
+        for (int y = 0; y < source.getHeight(); y++) {
+            for (int x = 0; x < source.getWidth(); x++) {
+                // Retrieve pixel amount
+                int pixel = source.getPixel(x, y);
+
+                // Retrieves the color channels for alpha and red of the retrieved
+                // pixel integer in ARGB form
+                alpha = Color.alpha(pixel); // A
+                blue = Color.red(pixel);     // R
+
+                // sets a pixel (x,y) on output bitmap to ARGB
+                bitmap.setPixel(x, y, Color.argb(alpha, 0, 0, blue));
+            }
+        }
+        // Return the gray scaled version of the red bitmap
+        return createGrayScale(bitmap);
+    }
+
+    /**
+     * Creates an alpha grayscale selfie bitmap. Uses the createGrayScale method after the alpha
+     * channeled version of the selfie bitmap is created. We need a gray scaled versions of the alpha
+     * channel of the selfie photo.
+     */
+    public Bitmap createAlphaGrayBitmap(Bitmap source) {
+        // Create bitmap to be returned from its width and height and its configuration
+        Bitmap bitmap = Bitmap.createBitmap(source.getWidth(), source.getHeight(),
+                source.getConfig());
+
+        // Create ARGB variables
+        // Disclude G and B, we want Red
+        int alpha;
+
+
+        /*
+        Loop through all the pixels and retrieve its pixel amount
+         */
+        for (int y = 0; y < source.getHeight(); y++) {
+            for (int x = 0; x < source.getWidth(); x++) {
+                // Retrieve pixel amount
+                int pixel = source.getPixel(x, y);
+
+                // Retrieves the color channels for alpha and red of the retrieved
+                // pixel integer in ARGB form
+                alpha = Color.alpha(pixel); // A
+
+                // sets a pixel (x,y) on output bitmap to ARGB
+                bitmap.setPixel(x, y, Color.argb(alpha, 0, 0, 0));
             }
         }
         // Return the gray scaled version of the red bitmap
