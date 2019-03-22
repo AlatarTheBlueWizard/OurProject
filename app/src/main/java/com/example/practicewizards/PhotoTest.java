@@ -8,13 +8,16 @@ import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Shader;
+import android.graphics.drawable.Drawable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.DrawableUtils;
 import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
@@ -84,7 +87,7 @@ public class PhotoTest extends AppCompatActivity {
                 .into(selfieTestView);
 
 
-        //groupTestView.setImageBitmap(group);
+        groupTestView.setImageBitmap(getARGBImage());
         //selfieTestView.setImageBitmap(resizedSelfie);
 
         // Set scaleDown button to invisible by default, can't scale down from size1. No size0.
@@ -193,24 +196,41 @@ public class PhotoTest extends AppCompatActivity {
         }
     }
 
-    /*
     //blend function using paint
     //May need to create new drawables for colors (errors)
     private Bitmap getARGBImage() {
+        // Add selfiebitmap to drawable
+
+        // Create black image
         BitmapFactory.Options opt = new BitmapFactory.Options();
         opt.inPreferredConfig = Bitmap.Config.ARGB_8888;
 
-        Bitmap red = BitmapFactory.decodeResource(getResources(), R.drawable.red, opt);
-        Bitmap green = BitmapFactory.decodeResource(getResources(), R.drawable.green, opt);
-        Bitmap blue = BitmapFactory.decodeResource(getResources(), R.drawable.blue, opt);
-        Bitmap alphaGray = BitmapFactory.decodeResource(getResources(), R.drawable.alpha, opt);
+        // Get resources returns the drawable folder attached to this context (activity)
+        // but we don't have the selfie photo in the drawable folder... so there is nothing
+        // much useful there. It returns null (I tried it). And from my research there is no
+        // way to code the image into the drawable folder. That must be done by hand but of course
+        // we know we can't do that ;) haha. So... we need to somehow perform this same functionality
+        // with the photos we do have.
 
-        int width = red.getWidth();
-        int height = red.getHeight();
+        // Problem is these decode functions below...
+        // Should create red version of selfie photo
+        Bitmap red = BitmapFactory.decodeResource(getResources(), R.color.red, opt);
+        // Should create blue version of selfie photo
+        Bitmap green = BitmapFactory.decodeResource(getResources(), R.color.green, opt);
+        // Should create green version of selfie photo
+        Bitmap blue = BitmapFactory.decodeResource(getResources(), R.color.blue, opt);
+        // Should create gray version of selfie photo
+        Bitmap alphaGray = BitmapFactory.decodeResource(getResources(), R.color.alpha, opt);
 
+        int width = red.getWidth();   // failed because red is null
+        int height = red.getHeight(); // same
+
+        // ARGB stands for Alpha Red Green Blue configuration
         Bitmap result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         result.eraseColor(Color.BLACK);
+        // Done!
 
+        // Get regular image back
         Paint redP = new Paint();
         redP.setShader(new BitmapShader(red, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
         redP.setColorFilter(new PorterDuffColorFilter(Color.RED, PorterDuff.Mode.MULTIPLY));
@@ -230,7 +250,9 @@ public class PhotoTest extends AppCompatActivity {
         c.drawRect(0, 0, width, height, redP);
         c.drawRect(0, 0, width, height, greenP);
         c.drawRect(0, 0, width, height, blueP);
+        // Done!
 
+        // Create alpha photo, fully opaque, and make the background transparent
         Bitmap alpha = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         int[] alphaPix = new int[width * height];
         alphaGray.getPixels(alphaPix, 0, width, 0, 0, width, height);
@@ -253,7 +275,7 @@ public class PhotoTest extends AppCompatActivity {
         alphaGray.recycle();
         alpha.recycle();
 
+        // Return created bitmap
         return result;
     }
-    */
 }
