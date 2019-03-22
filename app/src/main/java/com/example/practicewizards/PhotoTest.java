@@ -1,5 +1,6 @@
 package com.example.practicewizards;
 
+import android.content.ClipData;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -24,10 +25,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.DrawableUtils;
 import android.util.Log;
+import android.view.DragEvent;
+import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -641,5 +646,59 @@ public class PhotoTest extends AppCompatActivity {
         }
         //return photo filename
         return mergedSelfieFileName;
+    }
+
+    /**
+     * added dragListener and touchListener classes
+     * touchListener: will allow response to user dragging the selfie
+     * dragListener: will provide functionality to be able to actually
+     * grab the view and drag to wherever desired.
+     */
+    private final class touchListener implements View.OnTouchListener {
+        public boolean onTouch(View view, MotionEvent motionEvent) {
+            if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                ClipData data = ClipData.newPlainText("","");
+                View.DragShadowBuilder shadowBuilder = new View.DragShadowBuilder(view);
+                view.startDrag(data, shadowBuilder, view, 0);
+                view.setVisibility(View.INVISIBLE);
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    class dragListener implements View.OnDragListener {
+        //Drawable enterSelfImage = getResources().getDrawable(R.drawable.);
+        //Drawable enterGroupImage = getResources().getDrawable(R.drawable.class);
+        @Override
+        public boolean onDrag(View v, DragEvent event) {
+            int action = event.getAction();
+            switch (event.getAction()) {
+                case DragEvent.ACTION_DRAG_STARTED:
+                    //do nothing
+                    break;
+                case DragEvent.ACTION_DRAG_ENTERED:
+                    //v.setBackground(enterSelfImage);
+                    break;
+                case DragEvent.ACTION_DRAG_EXITED:
+                    //v.setBackground(enterSelfImage);
+                    break;
+                case DragEvent.ACTION_DROP:
+                    //dropped, reassign View to ViewGroup
+                    View view = (View) event.getLocalState();
+                    ViewGroup owner = (ViewGroup) view.getParent();
+                    owner.removeView(view);
+                    LinearLayout container =  (LinearLayout) v;
+                    container.addView(view);
+                    view.setVisibility(View.VISIBLE);
+                    break;
+                case DragEvent.ACTION_DRAG_ENDED:
+                    //v.setBackground(enterSelfImage);
+                default:
+                    break;
+            }
+            return true;
+        }
     }
 }
