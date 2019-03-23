@@ -8,11 +8,8 @@
 
     <ImageView
         android:id="@+id/groupTestView"
-        android:layout_width="259dp"
-        android:layout_height="191dp"
-        android:layout_marginStart="76dp"
-        android:layout_marginTop="74dp"
-        android:layout_marginEnd="76dp"
+        android:layout_width="match_parent"
+        android:layout_height="364dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -20,15 +17,11 @@
     <ImageView
         android:id="@+id/selfieTestView"
         android:layout_width="match_parent"
-        android:layout_height="298dp"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
+        android:layout_height="364dp"
+        android:layout_alignStart="@+id/groupTestView"
         android:layout_alignParentBottom="true"
-        android:layout_marginStart="55dp"
-        android:layout_marginTop="160dp"
-        android:layout_marginEnd="52dp"
-        android:layout_marginBottom="273dp"
+        android:layout_marginStart="0dp"
+        android:layout_marginBottom="367dp"
         android:scaleType="center"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

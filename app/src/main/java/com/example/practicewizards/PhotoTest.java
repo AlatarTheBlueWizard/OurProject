@@ -133,7 +133,8 @@ public class PhotoTest extends AppCompatActivity {
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
-                Bitmap mergedSelfieBitmap = bitmapOverlayToCenter(bitmaps.get(0), bitmaps.get(1));
+                bitmapOverlayToCenter(bitmaps.get(0), bitmaps.get(1));
+                Bitmap mergedSelfieBitmap = createGrayScale(selfieBitmap);
                 mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
                 try {
                     fOut.flush();
@@ -208,6 +209,7 @@ public class PhotoTest extends AppCompatActivity {
                         layoutParams.topMargin = y_cord;
                         v.setLayoutParams(layoutParams);
                         break;
+                        // During drag event
                     case DragEvent.ACTION_DRAG_LOCATION:
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_LOCATION");
                         x_cord = (int) event.getX();
@@ -761,16 +763,22 @@ public class PhotoTest extends AppCompatActivity {
     }
 
     public Bitmap bitmapOverlayToCenter(Bitmap bitmap1, Bitmap overlayBitmap) {
+        // Get group bitmap dimensions
         int bitmap1Width = bitmap1.getWidth();
         int bitmap1Height = bitmap1.getHeight();
+        // Divide by 3 to make overlayBitmap smaller
         int bitmap2Width = overlayBitmap.getWidth() / 3;
         int bitmap2Height = overlayBitmap.getHeight() / 3;
 
+        // Determine position to draw overlayBitmap
         float marginLeft = (float) (bitmap1Width * 0.5 - bitmap2Width * 0.5);
         float marginTop = (float) (bitmap1Height * 0.5 - bitmap2Height * 0.5);
 
+        // Create final bitmap from group bitmap
         Bitmap finalBitmap = Bitmap.createBitmap(bitmap1Width, bitmap1Height, bitmap1.getConfig());
+        // Create canvas for drawing
         Canvas canvas = new Canvas(finalBitmap);
+        // Draw both bitmaps on top
         canvas.drawBitmap(bitmap1, new Matrix(), null);
         canvas.drawBitmap(overlayBitmap, marginLeft, marginTop, null);
         return finalBitmap;
