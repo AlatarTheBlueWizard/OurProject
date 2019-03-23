@@ -117,14 +117,8 @@ public class PhotoTest extends AppCompatActivity {
         Log.d(TAG, "Selfie Path: " + selfieFileName);
 
         createBitmapFolder();
-        try {
-            FileOutputStream fOut = new FileOutputStream(mergedSelfieFileName);
-            Bitmap mergedSelfieBitmap = createRedGrayBitmap(selfieBitmap);
-           // mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
-        } catch (FileNotFoundException e) {
-            Log.e(TAG, "FILE NOT FOUND");
-            e.printStackTrace();
-        }
+
+
 
         // Use picasso to scale down and maintain aspect ratio
         Picasso.with(this)
@@ -135,7 +129,7 @@ public class PhotoTest extends AppCompatActivity {
 
 
         //groupTestView.setImageBitmap(group);
-        selfieTestView.setImageBitmap(createGreenGrayBitmap(selfieBitmap));
+        //selfieTestView.setImageBitmap(createGreenGrayBitmap(selfieBitmap));
 
 
         // Set scaleDown button to invisible by default, can't scale down from size1. No size0.
@@ -315,9 +309,10 @@ public class PhotoTest extends AppCompatActivity {
         }
     }
 
-    /*
+
     //blend function using paint
     //May need to create new drawables for colors (errors)
+    /*
     private Bitmap getARGBImage() {
         // Add selfiebitmap to drawable
 
@@ -335,7 +330,7 @@ public class PhotoTest extends AppCompatActivity {
         // Problem is these decode functions below...
         // Should create red version of selfie photo
 
-        /*
+
         int width = red.getWidth();   // failed because red is null
         int height = red.getHeight(); // same
 
@@ -347,10 +342,10 @@ public class PhotoTest extends AppCompatActivity {
 
 
 
-/*
+
         // Get regular image back
         Paint redP = new Paint();
-        redP.setShader(new BitmapShader(, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
+        redP.setShader(new BitmapShader(red, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
         redP.setColorFilter(new PorterDuffColorFilter(Color.RED, PorterDuff.Mode.MULTIPLY));
         redP.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SCREEN));
 
@@ -368,9 +363,9 @@ public class PhotoTest extends AppCompatActivity {
         c.drawRect(0, 0, width, height, redP);
         c.drawRect(0, 0, width, height, greenP);
         c.drawRect(0, 0, width, height, blueP);
-        */
+
         // Done!
-/*
+
         // Create alpha photo, fully opaque, and make the background transparent
         Bitmap alpha = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         int[] alphaPix = new int[width * height];
@@ -398,6 +393,7 @@ public class PhotoTest extends AppCompatActivity {
         return result;
     }
     */
+
 
 
     /**
