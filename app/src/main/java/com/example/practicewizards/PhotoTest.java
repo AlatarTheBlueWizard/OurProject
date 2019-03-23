@@ -200,6 +200,9 @@ public class PhotoTest extends AppCompatActivity {
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_ENTERED");
                         int x_cord = (int) event.getX();
                         int y_cord = (int) event.getY();
+                        layoutParams.leftMargin = x_cord;
+                        layoutParams.topMargin = y_cord;
+                        v.setLayoutParams(layoutParams);
                         break;
                     case DragEvent.ACTION_DRAG_EXITED:
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_EXITED");
@@ -214,12 +217,20 @@ public class PhotoTest extends AppCompatActivity {
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_LOCATION");
                         x_cord = (int) event.getX();
                         y_cord = (int) event.getY();
+                        layoutParams.leftMargin = x_cord;
+                        layoutParams.topMargin = y_cord;
+                        v.setLayoutParams(layoutParams);
                         break;
                     case DragEvent.ACTION_DRAG_ENDED:
                         Log.d(msg, "Action is DragEvent.ACTiON_DRAG_ENDED");
                         break;
                     case DragEvent.ACTION_DROP:
                         Log.d(msg, "ACTION_DROP event");
+                        x_cord = (int) event.getX();
+                        y_cord = (int) event.getY();
+                        layoutParams.leftMargin = x_cord;
+                        layoutParams.topMargin = y_cord;
+                        v.setLayoutParams(layoutParams);
                         break;
                     default:
                         break;
