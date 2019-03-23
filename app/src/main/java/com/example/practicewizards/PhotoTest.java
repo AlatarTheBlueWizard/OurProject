@@ -1,5 +1,7 @@
 package com.example.practicewizards;
 
+import android.content.ClipData;
+import android.content.ClipDescription;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -11,10 +13,12 @@ import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Shader;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.Image;
 import android.media.ImageReader;
@@ -25,10 +29,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.DrawableUtils;
 import android.util.Log;
+import android.view.DragEvent;
+import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -53,6 +62,11 @@ public class PhotoTest extends AppCompatActivity {
     private String selfieFileName;
     private ImageView selfieTestView;
     private ImageView groupTestView;
+    private String msg;
+
+    //paramaters for layout
+    private android.widget.RelativeLayout.LayoutParams layoutParams;
+
     // Boolean representing whether scaleUp or scaleDown button is visible
     private boolean isInvisible; // Put state into bool var to speed performance
 
@@ -157,6 +171,77 @@ public class PhotoTest extends AppCompatActivity {
         findViewById(R.id.scaleDown).setVisibility(Button.INVISIBLE);
         // One button is invisible
         isInvisible = true;
+
+        //Long-Click-Listener for the selfieTestView drag and drop
+        selfieTestView.setOnLongClickListener(new View.OnLongClickListener(){
+            public boolean onLongClick(View v) {
+                ClipData.Item item = new ClipData.Item((CharSequence)v.getTag());
+                String[] mimeTypes = {ClipDescription.MIMETYPE_TEXT_PLAIN};
+
+                ClipData dragData = new ClipData(v.getTag().toString(), mimeTypes, item);
+                View.DragShadowBuilder myShadow = new View.DragShadowBuilder(selfieTestView);
+
+                v.startDrag(dragData, myShadow, null, 0);
+                return true;
+            }
+        });
+
+        //On-Drag listener for selfieTestView (Allows dragging and dropping of the photo)
+        selfieTestView.setOnDragListener(new View.OnDragListener(){
+            @Override
+            public boolean onDrag(View v, DragEvent event) {
+                switch(event.getAction()) {
+                    case DragEvent.ACTION_DRAG_STARTED:
+                        layoutParams = (RelativeLayout.LayoutParams)v.getLayoutParams();
+                        Log.d(msg, "Action is DragEvent.ACTION_DRAG_STARTED");
+                        break;
+                    case DragEvent.ACTION_DRAG_ENTERED:
+                        Log.d(msg, "Action is DragEvent.ACTION_DRAG_ENTERED");
+                        int x_cord = (int) event.getX();
+                        int y_cord = (int) event.getY();
+                        break;
+                    case DragEvent.ACTION_DRAG_EXITED:
+                        Log.d(msg, "Action is DragEvent.ACTION_DRAG_EXITED");
+                        x_cord = (int) event.getX();
+                        y_cord = (int) event.getY();
+                        layoutParams.leftMargin = x_cord;
+                        layoutParams.topMargin = y_cord;
+                        v.setLayoutParams(layoutParams);
+                        break;
+                    case DragEvent.ACTION_DRAG_LOCATION:
+                        Log.d(msg, "Action is DragEvent.ACTION_DRAG_LOCATION");
+                        x_cord = (int) event.getX();
+                        y_cord = (int) event.getY();
+                        break;
+                    case DragEvent.ACTION_DRAG_ENDED:
+                        Log.d(msg, "Action is DragEvent.ACTiON_DRAG_ENDED");
+                        break;
+                    case DragEvent.ACTION_DROP:
+                        Log.d(msg, "ACTION_DROP event");
+                        break;
+                    default:
+                        break;
+                }
+                return true;
+            }
+        });
+
+        //checks if user used the motion to touch the image
+        selfieTestView.setOnTouchListener(new View.OnTouchListener(){
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    ClipData data = ClipData.newPlainText("","");
+                    View.DragShadowBuilder shadowBuilder = new View.DragShadowBuilder(selfieTestView);
+
+                    selfieTestView.startDrag(data, shadowBuilder, selfieTestView, 0);
+                    selfieTestView.setVisibility(View.VISIBLE);
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        });
     }
 
     /**
