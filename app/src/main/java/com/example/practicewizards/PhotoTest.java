@@ -186,9 +186,13 @@ public class PhotoTest extends AppCompatActivity {
                         break;
                     case DragEvent.ACTION_DRAG_ENDED:
                         Log.d(msg, "Action is DragEvent.ACTiON_DRAG_ENDED");
+                        x_cord = (int) event.getX();
+                        y_cord = (int) event.getY();
                         break;
                     case DragEvent.ACTION_DROP:
                         Log.d(msg, "ACTION_DROP event");
+                        x_cord = (int) event.getX();
+                        y_cord = (int) event.getY();
                         break;
                     default:
                         break;
