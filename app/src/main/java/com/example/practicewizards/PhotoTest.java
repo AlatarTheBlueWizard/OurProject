@@ -206,7 +206,7 @@ public class PhotoTest extends AppCompatActivity {
                     View.DragShadowBuilder shadowBuilder = new View.DragShadowBuilder(selfieTestView);
 
                     selfieTestView.startDrag(data, shadowBuilder, selfieTestView, 0);
-                    selfieTestView.setVisibility(View.INVISIBLE);
+                    selfieTestView.setVisibility(View.VISIBLE);
                     return true;
                 } else {
                     return false;
