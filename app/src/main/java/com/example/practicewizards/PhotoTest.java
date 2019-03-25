@@ -87,6 +87,7 @@ public class PhotoTest extends AppCompatActivity {
     // File saving for our selfieBitmap
     private String mergedSelfieFileName;
     private File mergedSelfieFileFolder;
+    private boolean faceDetected = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,7 +112,7 @@ public class PhotoTest extends AppCompatActivity {
         Bitmap group  = bitmaps.get(0);
         selfieBitmap = faceCropper(bitmaps.get(1));
 
-        final Bitmap joeBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.group);
+//        final Bitmap joeBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.smile);
 
         // Some math here to preserve aspect ratio
         // Just comments for example.
@@ -142,7 +143,7 @@ public class PhotoTest extends AppCompatActivity {
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
-                Bitmap mergedSelfieBitmap = /*bitmapOverlayToCenter(bitmaps.get(0), faceCropper(bitmaps.get(1)))*/ faceCropper(joeBitmap);
+                Bitmap mergedSelfieBitmap = bitmapOverlayToCenter(bitmaps.get(0), selfieBitmap);
                 mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
                 try {
                     fOut.flush();
@@ -255,6 +256,11 @@ public class PhotoTest extends AppCompatActivity {
                 }
             }
         });
+
+        if (faceDetected == false) {
+            Log.d(TAG, "faceDetected: " + faceDetected);
+            Toast.makeText(getApplicationContext(), "No Face Detected", Toast.LENGTH_LONG);
+        }
     }
 
     /**
@@ -776,12 +782,21 @@ public class PhotoTest extends AppCompatActivity {
     public Bitmap bitmapOverlayToCenter(Bitmap bitmap1, Bitmap overlayBitmap) {
         int bitmap1Width = bitmap1.getWidth();
         int bitmap1Height = bitmap1.getHeight();
-        int bitmap2Width = bitmap1.getWidth();
-        int bitmap2Height = bitmap1.getHeight();
+        int bitmap2Width = overlayBitmap.getWidth();
+        int bitmap2Height = overlayBitmap.getHeight();
 
 
-        float marginLeft = (float) (bitmap1Width * 0.5 - bitmap2Width * 0.5);
-        float marginTop = (float) (bitmap1Height * 0.5 - bitmap2Height * 0.5);
+        float marginLeft = (float) (bitmap1Width - bitmap2Width);
+        float marginTop = (float) (bitmap1Height - bitmap2Height);
+
+        if (faceDetected == false) {
+            bitmap2Width = overlayBitmap.getWidth() / 3;
+            bitmap2Height = overlayBitmap.getHeight() / 3;
+
+
+            marginLeft = (float) (bitmap1Width * 0.5 - bitmap2Width * 0.5);
+            marginTop = (float) (bitmap1Height * 0.5 - bitmap2Height * 0.5);
+        }
 
         Bitmap finalBitmap = Bitmap.createBitmap(bitmap1Width, bitmap1Height, bitmap1.getConfig());
         Canvas canvas = new Canvas(finalBitmap);
@@ -808,6 +823,7 @@ public class PhotoTest extends AppCompatActivity {
 
         //Check if a face was detected
         if (theFace == null) {
+            faceDetected = false;
             return bitmap;
         }
 
