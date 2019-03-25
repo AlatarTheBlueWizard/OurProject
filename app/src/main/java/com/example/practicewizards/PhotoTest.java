@@ -65,13 +65,15 @@ public class PhotoTest extends AppCompatActivity {
     private String msg;
 
     //paramaters for layout
-    private android.widget.RelativeLayout.LayoutParams layoutParams;
+    private android.widget.RelativeLayout.LayoutParams layoutParams; // constraint for drag/drop
 
     // Boolean representing whether scaleUp or scaleDown button is visible
     private boolean isInvisible; // Put state into bool var to speed performance
 
     // Bitmap for the selfie photo
     private Bitmap selfieBitmap;
+    // Bitmap for group photo
+    private Bitmap groupBitmap;
 
     // Thread Handling
     private HandlerThread mergeBackgroundThread;
@@ -80,6 +82,10 @@ public class PhotoTest extends AppCompatActivity {
     // File saving for our selfieBitmap
     private String mergedSelfieFileName;
     private File mergedSelfieFileFolder;
+
+    // Margins of where the selfie image was dropped
+    private float droppedMarginLeft;
+    private float droppedMarginTop;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,7 +107,7 @@ public class PhotoTest extends AppCompatActivity {
         selfieTestView = (ImageView)findViewById(R.id.selfieTestView);
 
         // Group photo is first because it was taken first
-        Bitmap group  = bitmaps.get(0);
+        groupBitmap  = bitmaps.get(0);
         selfieBitmap = bitmaps.get(1);
 
         // Some math here to preserve aspect ratio
@@ -133,8 +139,7 @@ public class PhotoTest extends AppCompatActivity {
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
-                bitmapOverlayToCenter(bitmaps.get(0), bitmaps.get(1));
-                Bitmap mergedSelfieBitmap = createGrayScale(selfieBitmap);
+                Bitmap mergedSelfieBitmap = createRedGrayBitmap(selfieBitmap);
                 mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
                 try {
                     fOut.flush();
@@ -144,7 +149,6 @@ public class PhotoTest extends AppCompatActivity {
                 }
             }
         });
-
         mergeBackgroundHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -164,8 +168,9 @@ public class PhotoTest extends AppCompatActivity {
 
 
 
-        //groupTestView.setImageBitmap(group);
-//        selfieTestView.setImageBitmap(createGreenGrayBitmap(selfieBitmap));
+
+        groupTestView.setImageBitmap(groupBitmap);
+        selfieTestView.setImageBitmap(createGreenGrayBitmap(selfieBitmap));
 
 
         // Set scaleDown button to invisible by default, can't scale down from size1. No size0.
@@ -192,10 +197,13 @@ public class PhotoTest extends AppCompatActivity {
             @Override
             public boolean onDrag(View v, DragEvent event) {
                 switch(event.getAction()) {
+                    // Signals a drag/drop
                     case DragEvent.ACTION_DRAG_STARTED:
                         layoutParams = (RelativeLayout.LayoutParams)v.getLayoutParams();
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_STARTED");
                         break;
+                        // Signals to view v that the drag point entered the bounding box
+                    // of the drop veiw
                     case DragEvent.ACTION_DRAG_ENTERED:
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_ENTERED");
                         int x_cord = (int) event.getX();
@@ -204,6 +212,7 @@ public class PhotoTest extends AppCompatActivity {
                         layoutParams.topMargin = y_cord;
                         v.setLayoutParams(layoutParams);
                         break;
+                        // signals an out-of-range x and y coordinate from the bounding box
                     case DragEvent.ACTION_DRAG_EXITED:
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_EXITED");
                         x_cord = (int) event.getX();
@@ -212,7 +221,7 @@ public class PhotoTest extends AppCompatActivity {
                         layoutParams.topMargin = y_cord;
                         v.setLayoutParams(layoutParams);
                         break;
-                        // During drag event
+                        // returned to the view if the view is within bounding box parameters
                     case DragEvent.ACTION_DRAG_LOCATION:
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_LOCATION");
                         x_cord = (int) event.getX();
@@ -221,13 +230,19 @@ public class PhotoTest extends AppCompatActivity {
                         layoutParams.topMargin = y_cord;
                         v.setLayoutParams(layoutParams);
                         break;
+                        // signals end of drag/drop
                     case DragEvent.ACTION_DRAG_ENDED:
                         Log.d(msg, "Action is DragEvent.ACTiON_DRAG_ENDED");
                         break;
+                        // returns true if the view is within bounds, false if not
                     case DragEvent.ACTION_DROP:
                         Log.d(msg, "ACTION_DROP event");
                         x_cord = (int) event.getX();
                         y_cord = (int) event.getY();
+                        // Set members for bitmap merging in bitmapOverlayToCenter()
+                        droppedMarginLeft = x_cord;
+                        droppedMarginTop  = y_cord;
+                        // Set layout parameters for updating position
                         layoutParams.leftMargin = x_cord;
                         layoutParams.topMargin = y_cord;
                         v.setLayoutParams(layoutParams);
@@ -773,25 +788,74 @@ public class PhotoTest extends AppCompatActivity {
         return mergedSelfieFileName;
     }
 
-    public Bitmap bitmapOverlayToCenter(Bitmap bitmap1, Bitmap overlayBitmap) {
+    /**
+     * Used to save state of photos
+     * @param view
+     */
+    public void saveState(View view) {
+        mergeBackgroundHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                FileOutputStream fOut = null;
+                try {
+                    fOut = new FileOutputStream(mergedSelfieFileName);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                //bitmapOverlayToCenter(group, bitmaps.get(1));
+                Bitmap mergedSelfieBitmap = bitmapOverlayMerge();
+                mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
+                try {
+                    fOut.flush();
+                    fOut.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        mergeBackgroundHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                // Use picasso to scale down and maintain aspect ratio
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        groupTestView.setVisibility(View.INVISIBLE);
+                        Picasso.with(getApplicationContext())
+                                .load(new File(mergedSelfieFileName))
+                                .into(selfieTestView);
+
+                    }
+                });
+            }
+        });
+
+    }
+
+    /**
+     *
+     * @return
+     */
+    public Bitmap bitmapOverlayMerge() {
         // Get group bitmap dimensions
-        int bitmap1Width = bitmap1.getWidth();
-        int bitmap1Height = bitmap1.getHeight();
+        int bitmap1Width = groupBitmap.getWidth();
+        int bitmap1Height = groupBitmap.getHeight();
         // Divide by 3 to make overlayBitmap smaller
-        int bitmap2Width = overlayBitmap.getWidth() / 3;
-        int bitmap2Height = overlayBitmap.getHeight() / 3;
+        int bitmap2Width = selfieBitmap.getWidth() / 3;
+        int bitmap2Height = selfieBitmap.getHeight() / 3;
 
         // Determine position to draw overlayBitmap
         float marginLeft = (float) (bitmap1Width * 0.5 - bitmap2Width * 0.5);
         float marginTop = (float) (bitmap1Height * 0.5 - bitmap2Height * 0.5);
 
         // Create final bitmap from group bitmap
-        Bitmap finalBitmap = Bitmap.createBitmap(bitmap1Width, bitmap1Height, bitmap1.getConfig());
+        Bitmap finalBitmap = Bitmap.createBitmap(bitmap1Width, bitmap1Height, groupBitmap.getConfig());
         // Create canvas for drawing
         Canvas canvas = new Canvas(finalBitmap);
         // Draw both bitmaps on top
-        canvas.drawBitmap(bitmap1, new Matrix(), null);
-        canvas.drawBitmap(overlayBitmap, marginLeft, marginTop, null);
+        canvas.drawBitmap(groupBitmap, new Matrix(), null);
+        canvas.drawBitmap(selfieBitmap, droppedMarginLeft, droppedMarginTop, null);
         return finalBitmap;
     }
 }

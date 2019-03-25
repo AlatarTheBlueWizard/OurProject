@@ -56,5 +56,20 @@
         android:textColor="#FFF"
         android:visibility="visible" />
 
+    <Button
+        android:id="@+id/saveState"
+        android:layout_width="73dp"
+        android:layout_height="40dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="168dp"
+        android:layout_marginEnd="169dp"
+        android:layout_marginBottom="158dp"
+        android:onClick="saveState"
+        android:text="Save"
+        android:textColor="#FFF"
+        android:visibility="visible" />
+
 
 </RelativeLayout>

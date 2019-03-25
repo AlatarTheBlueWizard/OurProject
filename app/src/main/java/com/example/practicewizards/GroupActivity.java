@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.ImageFormat;
+import android.graphics.Matrix;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -17,6 +18,7 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
+import android.media.ExifInterface;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
@@ -36,9 +38,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
-
 import com.google.gson.Gson;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -174,6 +174,7 @@ public class GroupActivity extends AppCompatActivity {
                 // Save the image to outer class
                 bitmap = BitmapFactory.decodeFile(groupPhotoFileName);
                 Log.i(TAG, "File saved and bitmap created");
+
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (NullPointerException nullPtr) {
@@ -241,6 +242,7 @@ public class GroupActivity extends AppCompatActivity {
                 }
             };
     private CaptureRequest.Builder groupCaptureRequestBuilder;
+    // Mapping integers to integers
     private static SparseIntArray ORIENTATIONS = new SparseIntArray();
 
     // Image size
@@ -248,11 +250,12 @@ public class GroupActivity extends AppCompatActivity {
     // Image reader
     private ImageReader imageReader;
 
+    // Clockwise rotation starting at zero (landscape turned left mode)
     static {
-        ORIENTATIONS.append(Surface.ROTATION_0, 0);
-        ORIENTATIONS.append(Surface.ROTATION_90, 90);
-        ORIENTATIONS.append(Surface.ROTATION_180, 180);
-        ORIENTATIONS.append(Surface.ROTATION_270, 270);
+        ORIENTATIONS.append(Surface.ROTATION_0, 0);     // Left
+        ORIENTATIONS.append(Surface.ROTATION_90, 90);   // Upright
+        ORIENTATIONS.append(Surface.ROTATION_180, 180); // Right
+        ORIENTATIONS.append(Surface.ROTATION_270, 270); // Upside Down
     }
 
 
@@ -349,6 +352,37 @@ public class GroupActivity extends AppCompatActivity {
         // and saved the image
         // make sure we have a saved image. Double check also the bitmap
         if (picTaken && bitmap != null) {
+            ExifInterface exifInterface = null;
+            try {
+                exifInterface = new ExifInterface(groupPhotoFileName);
+                // See if the returned getAttribute string tag equals "6"
+                // Left Landscape
+                if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("6")){
+                    Matrix matrix = new Matrix();
+                    // Add 90 to create portrait bitmap
+                    // plan to rotate bitmap 90 degrees to portrait mode
+                    matrix.postRotate(90);
+                    // Create a new bitmap from the desired bitmap (member variable)
+                    // With no offset in x and y and its original width/height
+                    // But with a different matrix rotation
+                    bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
+                            bitmap.getHeight(), matrix, true);
+                }
+                // Right Landscape
+                else if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("8")) {
+                    Matrix matrix = new Matrix();
+                    // Subtract 90 to create portrait bitmap
+                    // plan to rotate bitmap 90 degrees to portrait mode
+                    matrix.postRotate(-90);
+                    // Create a new bitmap from the desired bitmap (member variable)
+                    // With no offset in x and y and its original width/height
+                    // But with a different matrix rotation
+                    bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                }
+                Log.d(TAG, "ExifInterface "+ exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             Log.i(TAG, "Selfie intent starting");
             //Declare new GSON object for serialization/deserialization
             Gson gson = new Gson();
@@ -709,7 +743,9 @@ public class GroupActivity extends AppCompatActivity {
             groupCaptureRequestBuilder =
                     groupCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             groupCaptureRequestBuilder.addTarget(imageReader.getSurface());
-            groupCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, 90);
+            Log.v(TAG, "Still capture at orientation: " + ORIENTATIONS.valueAt(1));
+            groupCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION,
+                    ORIENTATIONS.valueAt(1));
 
             // Create stillCaptureCallback
             CameraCaptureSession.CaptureCallback stillCaptureCallback = new
