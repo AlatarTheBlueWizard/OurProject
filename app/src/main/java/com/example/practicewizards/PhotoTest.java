@@ -17,6 +17,7 @@ import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -25,10 +26,12 @@ import android.media.ImageReader;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.DrawableUtils;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.DragEvent;
 import android.view.MotionEvent;
 import android.view.TextureView;
@@ -38,7 +41,11 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
+import com.google.android.gms.vision.Frame;
+import com.google.android.gms.vision.face.Face;
+import com.google.android.gms.vision.face.FaceDetector;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.squareup.picasso.Picasso;
@@ -102,7 +109,9 @@ public class PhotoTest extends AppCompatActivity {
 
         // Group photo is first because it was taken first
         Bitmap group  = bitmaps.get(0);
-        selfieBitmap = bitmaps.get(1);
+        selfieBitmap = faceCropper(bitmaps.get(1));
+
+        final Bitmap joeBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.group);
 
         // Some math here to preserve aspect ratio
         // Just comments for example.
@@ -133,7 +142,7 @@ public class PhotoTest extends AppCompatActivity {
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
-                Bitmap mergedSelfieBitmap = bitmapOverlayToCenter(bitmaps.get(0), bitmaps.get(1));
+                Bitmap mergedSelfieBitmap = /*bitmapOverlayToCenter(bitmaps.get(0), faceCropper(bitmaps.get(1)))*/ faceCropper(joeBitmap);
                 mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
                 try {
                     fOut.flush();
@@ -767,8 +776,9 @@ public class PhotoTest extends AppCompatActivity {
     public Bitmap bitmapOverlayToCenter(Bitmap bitmap1, Bitmap overlayBitmap) {
         int bitmap1Width = bitmap1.getWidth();
         int bitmap1Height = bitmap1.getHeight();
-        int bitmap2Width = overlayBitmap.getWidth() / 3;
-        int bitmap2Height = overlayBitmap.getHeight() / 3;
+        int bitmap2Width = bitmap1.getWidth();
+        int bitmap2Height = bitmap1.getHeight();
+
 
         float marginLeft = (float) (bitmap1Width * 0.5 - bitmap2Width * 0.5);
         float marginTop = (float) (bitmap1Height * 0.5 - bitmap2Height * 0.5);
@@ -778,5 +788,32 @@ public class PhotoTest extends AppCompatActivity {
         canvas.drawBitmap(bitmap1, new Matrix(), null);
         canvas.drawBitmap(overlayBitmap, marginLeft, marginTop, null);
         return finalBitmap;
+    }
+
+    public Bitmap faceCropper(Bitmap bitmap) {
+        //Declare Face Detector
+        FaceDetector faceDetector = new
+                FaceDetector.Builder(getApplicationContext()).setTrackingEnabled(false)
+                .build();
+        if(!faceDetector.isOperational()){
+            Toast.makeText(getApplicationContext(), "Failed to build Face Detector", Toast.LENGTH_LONG);
+        }
+
+        //Create Frame for Face Detector to use
+        Frame frame = new Frame.Builder().setBitmap(bitmap).build();
+        SparseArray<Face> faces = faceDetector.detect(frame);
+
+        //Get first Face object
+        Face theFace = faces.get(0);
+
+        //Check if a face was detected
+        if (theFace == null) {
+            return bitmap;
+        }
+
+        //Create Final Bitmap
+        Bitmap tempBitmap = Bitmap.createBitmap(bitmap, (int) theFace.getPosition().x, (int) theFace.getPosition().y, (int) theFace.getWidth(), (int) theFace.getHeight());
+
+        return tempBitmap;
     }
 }
