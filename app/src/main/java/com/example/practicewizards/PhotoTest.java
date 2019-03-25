@@ -38,6 +38,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -270,6 +271,76 @@ public class PhotoTest extends AppCompatActivity {
                 }
             }
         });
+
+        /*public boolean onLongClick(View v) {
+            //create new ClipData.item from the ImageView's objects tag
+            ClipData.Item item = new ClipData.Item((CharSequence)v.getTag());
+            // Create a new ClipData using the tag as a label, the plain text MIME type, and
+            // the already-created item. This will create a new ClipDescription object within the
+            // ClipData, and set its MIME type entry to "text/plain"
+            String[] mimeTypes = {ClipDescription.MIMETYPE_TEXT_PLAIN};
+            ClipData data = new ClipData(v.getTag().toString(), mimeTypes, item);
+            //Instantiates the drag shadow builder
+            View.DragShadowBuilder dragShadow = new View.DragShadowBuilder(v);
+            //starts drag
+            v.startDrag(data, dragShadow, v, 0);
+            return true;
+        }
+
+        public boolean onDrag(View v, DragEvent event) {
+            // Defines a variable to store the action type for the incoming event
+            int action = event.getAction();
+            //Handles each of the expected events
+            switch(action) {
+                case DragEvent.ACTION_DRAG_STARTED:
+                    //Determines if this View can accept the dragged data
+                    if (event.getClipDescription().hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN)) {
+                        return true;
+                    }
+                    return false;
+                case DragEvent.ACTION_DRAG_ENTERED:
+                    //Applies a GRAY or any color tint to the View. Return true; the return value is ignored
+                    v.getBackground().setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_IN);
+                    //Invalidate the view to force a redraw in the new tint
+                    v.invalidate();
+                    return true;
+                case DragEvent.ACTION_DROP:
+                    //Gets the item containing the dragged data
+                    ClipData.Item item = event.getClipData().getItemAt(0);
+                    //Gets the text data from the item
+                    String dragData = item.getText().toString();
+                    //Displays a message containing the dragged data
+                    Toast.makeText(this, "Dragged data is " + dragData, Toast.LENGTH_SHORT).show();
+                    //Turns off any color tints
+                    v.getBackground().clearColorFilter();
+                    //invalidates the view to force a redraw
+                    v.invalidate();
+
+                    View vw = (View) event.getLocalState();
+                    ViewGroup owner = (ViewGroup) vw.getParent();
+                    owner.removeView(vw); //remove dragged view
+                    //cast the view into RelativeLayout
+                    RelativeLayout container = (RelativeLayout) v;
+                    container.addView(vw); //finally set visibility to VISIBLE
+                    return true;
+                case DragEvent.ACTION_DRAG_ENDED:
+                    //turns off any color tinting
+                    v.getBackground().clearColorFilter();
+                    //invalidates the view to force a redraw
+                    v.invalidate();
+                    //does a getResult() and displays what happened
+                    if (event.getResult())
+                        Toast.makeText(this, "The drop was handled", Toast.LENGTH_SHORT).show();
+                    else
+                        Toast.makeText(this, "The drop didn't work", Toast.LENGTH_SHORT).show();
+                    //returns true; value is ignored
+                    return true;
+                default:
+                    Log.e("Drag and Drop", "Unknown action type recieved by onDragListener");
+                    break;
+            }
+            return false;
+        }*/
     }
 
     /**
