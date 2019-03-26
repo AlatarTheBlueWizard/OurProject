@@ -116,7 +116,7 @@ public class PhotoTest extends AppCompatActivity {
 
         // Group photo is first because it was taken first
         groupBitmap  = bitmaps.get(0);
-        selfieBitmap = bitmaps.get(1);
+        selfieBitmap = faceCropper(bitmaps.get(1));
 
         // Some math here to preserve aspect ratio
         // Just comments for example.
@@ -147,7 +147,7 @@ public class PhotoTest extends AppCompatActivity {
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
-                Bitmap mergedSelfieBitmap = createRedGrayBitmap(selfieBitmap);
+                Bitmap mergedSelfieBitmap = selfieBitmap;
                 mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
                 try {
                     fOut.flush();
@@ -178,7 +178,7 @@ public class PhotoTest extends AppCompatActivity {
 
 
         groupTestView.setImageBitmap(groupBitmap);
-        selfieTestView.setImageBitmap(createGreenGrayBitmap(selfieBitmap));
+        selfieTestView.setImageBitmap(selfieBitmap);
 
 
         // Set scaleDown button to invisible by default, can't scale down from size1. No size0.
@@ -886,7 +886,7 @@ public class PhotoTest extends AppCompatActivity {
                     e.printStackTrace();
                 }
                 //bitmapOverlayToCenter(group, bitmaps.get(1));
-                Bitmap mergedSelfieBitmap = bitmapOverlayMerge();
+                Bitmap mergedSelfieBitmap = bitmapOverlayMerge(groupBitmap, selfieBitmap);
                 mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
                 try {
                     fOut.flush();
@@ -915,7 +915,7 @@ public class PhotoTest extends AppCompatActivity {
         });
 
     }
-    public Bitmap bitmapOverlayToCenter(Bitmap bitmap1, Bitmap overlayBitmap) {
+    public Bitmap bitmapOverlayMerge(Bitmap bitmap1, Bitmap overlayBitmap) {
         int bitmap1Width = bitmap1.getWidth();
         int bitmap1Height = bitmap1.getHeight();
         int bitmap2Width = overlayBitmap.getWidth();
