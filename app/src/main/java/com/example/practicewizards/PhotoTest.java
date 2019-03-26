@@ -72,13 +72,15 @@ public class PhotoTest extends AppCompatActivity {
     private String msg;
 
     //paramaters for layout
-    private android.widget.RelativeLayout.LayoutParams layoutParams;
+    private android.widget.RelativeLayout.LayoutParams layoutParams; // constraint for drag/drop
 
     // Boolean representing whether scaleUp or scaleDown button is visible
     private boolean isInvisible; // Put state into bool var to speed performance
 
     // Bitmap for the selfie photo
     private Bitmap selfieBitmap;
+    // Bitmap for group photo
+    private Bitmap groupBitmap;
 
     // Thread Handling
     private HandlerThread mergeBackgroundThread;
@@ -88,6 +90,10 @@ public class PhotoTest extends AppCompatActivity {
     private String mergedSelfieFileName;
     private File mergedSelfieFileFolder;
     private boolean faceDetected = true;
+
+    // Margins of where the selfie image was dropped
+    private float droppedMarginLeft;
+    private float droppedMarginTop;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,10 +115,8 @@ public class PhotoTest extends AppCompatActivity {
         selfieTestView = (ImageView)findViewById(R.id.selfieTestView);
 
         // Group photo is first because it was taken first
-        Bitmap group  = bitmaps.get(0);
-        selfieBitmap = faceCropper(bitmaps.get(1));
-
-//        final Bitmap joeBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.smile);
+        groupBitmap  = bitmaps.get(0);
+        selfieBitmap = bitmaps.get(1);
 
         // Some math here to preserve aspect ratio
         // Just comments for example.
@@ -143,7 +147,7 @@ public class PhotoTest extends AppCompatActivity {
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
-                Bitmap mergedSelfieBitmap = bitmapOverlayToCenter(bitmaps.get(0), selfieBitmap);
+                Bitmap mergedSelfieBitmap = createRedGrayBitmap(selfieBitmap);
                 mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
                 try {
                     fOut.flush();
@@ -153,7 +157,6 @@ public class PhotoTest extends AppCompatActivity {
                 }
             }
         });
-
         mergeBackgroundHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -173,8 +176,9 @@ public class PhotoTest extends AppCompatActivity {
 
 
 
-        //groupTestView.setImageBitmap(group);
-//        selfieTestView.setImageBitmap(createGreenGrayBitmap(selfieBitmap));
+
+        groupTestView.setImageBitmap(groupBitmap);
+        selfieTestView.setImageBitmap(createGreenGrayBitmap(selfieBitmap));
 
 
         // Set scaleDown button to invisible by default, can't scale down from size1. No size0.
@@ -201,15 +205,22 @@ public class PhotoTest extends AppCompatActivity {
             @Override
             public boolean onDrag(View v, DragEvent event) {
                 switch(event.getAction()) {
+                    // Signals a drag/drop
                     case DragEvent.ACTION_DRAG_STARTED:
                         layoutParams = (RelativeLayout.LayoutParams)v.getLayoutParams();
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_STARTED");
                         break;
+                        // Signals to view v that the drag point entered the bounding box
+                    // of the drop veiw
                     case DragEvent.ACTION_DRAG_ENTERED:
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_ENTERED");
                         int x_cord = (int) event.getX();
                         int y_cord = (int) event.getY();
+                        layoutParams.leftMargin = x_cord;
+                        layoutParams.topMargin = y_cord;
+                        v.setLayoutParams(layoutParams);
                         break;
+                        // signals an out-of-range x and y coordinate from the bounding box
                     case DragEvent.ACTION_DRAG_EXITED:
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_EXITED");
                         x_cord = (int) event.getX();
@@ -218,20 +229,31 @@ public class PhotoTest extends AppCompatActivity {
                         layoutParams.topMargin = y_cord;
                         v.setLayoutParams(layoutParams);
                         break;
+                        // returned to the view if the view is within bounding box parameters
                     case DragEvent.ACTION_DRAG_LOCATION:
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_LOCATION");
                         x_cord = (int) event.getX();
                         y_cord = (int) event.getY();
+                        layoutParams.leftMargin = x_cord;
+                        layoutParams.topMargin = y_cord;
+                        v.setLayoutParams(layoutParams);
                         break;
+                        // signals end of drag/drop
                     case DragEvent.ACTION_DRAG_ENDED:
                         Log.d(msg, "Action is DragEvent.ACTiON_DRAG_ENDED");
-                        x_cord = (int) event.getX();
-                        y_cord = (int) event.getY();
                         break;
+                        // returns true if the view is within bounds, false if not
                     case DragEvent.ACTION_DROP:
                         Log.d(msg, "ACTION_DROP event");
                         x_cord = (int) event.getX();
                         y_cord = (int) event.getY();
+                        // Set members for bitmap merging in bitmapOverlayToCenter()
+                        droppedMarginLeft = x_cord;
+                        droppedMarginTop  = y_cord;
+                        // Set layout parameters for updating position
+                        layoutParams.leftMargin = x_cord;
+                        layoutParams.topMargin = y_cord;
+                        v.setLayoutParams(layoutParams);
                         break;
                     default:
                         break;
@@ -261,6 +283,76 @@ public class PhotoTest extends AppCompatActivity {
             Log.d(TAG, "faceDetected: " + faceDetected);
             Toast.makeText(getApplicationContext(), "No Face Detected", Toast.LENGTH_LONG);
         }
+
+        /*public boolean onLongClick(View v) {
+            //create new ClipData.item from the ImageView's objects tag
+            ClipData.Item item = new ClipData.Item((CharSequence)v.getTag());
+            // Create a new ClipData using the tag as a label, the plain text MIME type, and
+            // the already-created item. This will create a new ClipDescription object within the
+            // ClipData, and set its MIME type entry to "text/plain"
+            String[] mimeTypes = {ClipDescription.MIMETYPE_TEXT_PLAIN};
+            ClipData data = new ClipData(v.getTag().toString(), mimeTypes, item);
+            //Instantiates the drag shadow builder
+            View.DragShadowBuilder dragShadow = new View.DragShadowBuilder(v);
+            //starts drag
+            v.startDrag(data, dragShadow, v, 0);
+            return true;
+        }
+
+        public boolean onDrag(View v, DragEvent event) {
+            // Defines a variable to store the action type for the incoming event
+            int action = event.getAction();
+            //Handles each of the expected events
+            switch(action) {
+                case DragEvent.ACTION_DRAG_STARTED:
+                    //Determines if this View can accept the dragged data
+                    if (event.getClipDescription().hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN)) {
+                        return true;
+                    }
+                    return false;
+                case DragEvent.ACTION_DRAG_ENTERED:
+                    //Applies a GRAY or any color tint to the View. Return true; the return value is ignored
+                    v.getBackground().setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_IN);
+                    //Invalidate the view to force a redraw in the new tint
+                    v.invalidate();
+                    return true;
+                case DragEvent.ACTION_DROP:
+                    //Gets the item containing the dragged data
+                    ClipData.Item item = event.getClipData().getItemAt(0);
+                    //Gets the text data from the item
+                    String dragData = item.getText().toString();
+                    //Displays a message containing the dragged data
+                    Toast.makeText(this, "Dragged data is " + dragData, Toast.LENGTH_SHORT).show();
+                    //Turns off any color tints
+                    v.getBackground().clearColorFilter();
+                    //invalidates the view to force a redraw
+                    v.invalidate();
+
+                    View vw = (View) event.getLocalState();
+                    ViewGroup owner = (ViewGroup) vw.getParent();
+                    owner.removeView(vw); //remove dragged view
+                    //cast the view into RelativeLayout
+                    RelativeLayout container = (RelativeLayout) v;
+                    container.addView(vw); //finally set visibility to VISIBLE
+                    return true;
+                case DragEvent.ACTION_DRAG_ENDED:
+                    //turns off any color tinting
+                    v.getBackground().clearColorFilter();
+                    //invalidates the view to force a redraw
+                    v.invalidate();
+                    //does a getResult() and displays what happened
+                    if (event.getResult())
+                        Toast.makeText(this, "The drop was handled", Toast.LENGTH_SHORT).show();
+                    else
+                        Toast.makeText(this, "The drop didn't work", Toast.LENGTH_SHORT).show();
+                    //returns true; value is ignored
+                    return true;
+                default:
+                    Log.e("Drag and Drop", "Unknown action type recieved by onDragListener");
+                    break;
+            }
+            return false;
+        }*/
     }
 
     /**
@@ -779,6 +871,50 @@ public class PhotoTest extends AppCompatActivity {
         return mergedSelfieFileName;
     }
 
+    /**
+     * Used to save state of photos
+     * @param view
+     */
+    public void saveState(View view) {
+        mergeBackgroundHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                FileOutputStream fOut = null;
+                try {
+                    fOut = new FileOutputStream(mergedSelfieFileName);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                //bitmapOverlayToCenter(group, bitmaps.get(1));
+                Bitmap mergedSelfieBitmap = bitmapOverlayMerge();
+                mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
+                try {
+                    fOut.flush();
+                    fOut.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        mergeBackgroundHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                // Use picasso to scale down and maintain aspect ratio
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        groupTestView.setVisibility(View.INVISIBLE);
+                        Picasso.with(getApplicationContext())
+                                .load(new File(mergedSelfieFileName))
+                                .into(selfieTestView);
+
+                    }
+                });
+            }
+        });
+
+    }
     public Bitmap bitmapOverlayToCenter(Bitmap bitmap1, Bitmap overlayBitmap) {
         int bitmap1Width = bitmap1.getWidth();
         int bitmap1Height = bitmap1.getHeight();
@@ -798,7 +934,9 @@ public class PhotoTest extends AppCompatActivity {
             marginTop = (float) (bitmap1Height * 0.5 - bitmap2Height * 0.5);
         }
 
-        Bitmap finalBitmap = Bitmap.createBitmap(bitmap1Width, bitmap1Height, bitmap1.getConfig());
+        // Create final bitmap from group bitmap
+        Bitmap finalBitmap = Bitmap.createBitmap(bitmap1Width, bitmap1Height, groupBitmap.getConfig());
+        // Create canvas for drawing
         Canvas canvas = new Canvas(finalBitmap);
         canvas.drawBitmap(bitmap1, new Matrix(), null);
         canvas.drawBitmap(overlayBitmap, marginLeft, marginTop, null);

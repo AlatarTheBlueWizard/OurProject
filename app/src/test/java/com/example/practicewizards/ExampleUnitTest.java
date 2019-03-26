@@ -1,5 +1,6 @@
 package com.example.practicewizards;
 
+
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -10,7 +11,7 @@ import static org.junit.Assert.assertEquals;
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
 public class ExampleUnitTest {
-/**
+
     @Test
     public void are_files_saved() {
 
@@ -23,15 +24,7 @@ public class ExampleUnitTest {
 
     @Test
     public void manager_cameras_open_correctly() {
-        // Test camera's through manageCameras
-        ManageCameras manageCameras = new ManageCameras();
-        String cameraId = manageCameras.open(true);
-        assert(cameraId != null);
 
-        // Test front facing
-        manageCameras = new ManageCameras();
-        cameraId = manageCameras.open(false);
-        assert(cameraId != null);
     }
-    */
+
 }

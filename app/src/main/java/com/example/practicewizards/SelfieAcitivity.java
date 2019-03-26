@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.ImageFormat;
+import android.graphics.Matrix;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -18,6 +19,7 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
+import android.media.ExifInterface;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
@@ -345,6 +347,40 @@ public class SelfieAcitivity extends AppCompatActivity {
         // and saved the image
         // make sure we have a saved image. Double check also the bitmap
         if (picTaken && bitmap != null) {
+            // Make sure orientation of bitmap is correct
+            ExifInterface exifInterface = null;
+            try {
+                exifInterface = new ExifInterface(selfiePhotoFileName);
+                // See if the returned getAttribute string tag equals "6"
+                // Left Landscape
+                if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("6")){
+                    Matrix matrix = new Matrix();
+                    // Add 90 to create portrait bitmap
+                    // plan to rotate bitmap 90 degrees to portrait mode
+                    matrix.postRotate(90);
+                    // Create a new bitmap from the desired bitmap (member variable)
+                    // With no offset in x and y and its original width/height
+                    // But with a different matrix rotation
+                    bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                }
+                // Right Landscape
+                else if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("8")) {
+                    Matrix matrix = new Matrix();
+                    // Subtract 90 to create portrait bitmap
+                    // plan to rotate bitmap 90 degrees to portrait mode
+                    matrix.postRotate(-90);
+                    // Create a new bitmap from the desired bitmap (member variable)
+                    // With no offset in x and y and its original width/height
+                    // But with a different matrix rotation
+                    bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
+                            bitmap.getHeight(), matrix, true);
+                }
+                Log.d(TAG, "ExifInterface "+ exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION));
+            } catch (IOException e) {
+                Log.e(TAG, "File Access Error");
+                e.printStackTrace();
+            }
+
             Log.i(TAG, "Selfie intent starting");
             // Get intent that created this activity to retrieve bitmap and group filename
             Intent intent = getIntent();
@@ -683,7 +719,10 @@ public class SelfieAcitivity extends AppCompatActivity {
             selfieCaptureRequestBuilder =
                     selfieCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             selfieCaptureRequestBuilder.addTarget(imageReader.getSurface());
-            selfieCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, 0);
+
+            Log.v(TAG, "Still capture at orientation: " + ORIENTATIONS.valueAt(3));
+            selfieCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION,
+                    ORIENTATIONS.valueAt(3));
             Log.d(TAG, "Target Set");
 
             // Create stillCaptureCallback
