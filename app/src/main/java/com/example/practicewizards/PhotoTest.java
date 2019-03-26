@@ -114,9 +114,12 @@ public class PhotoTest extends AppCompatActivity {
         groupTestView = (ImageView)findViewById(R.id.groupTestView);
         selfieTestView = (ImageView)findViewById(R.id.selfieTestView);
 
+        Bitmap testGroup = BitmapFactory.decodeResource(getResources(), R.drawable.group2);
+        Bitmap testSelfie = BitmapFactory.decodeResource(getResources(), R.drawable.smile);
+
         // Group photo is first because it was taken first
-        groupBitmap  = bitmaps.get(0);
-        selfieBitmap = faceCropper(bitmaps.get(1));
+        groupBitmap  = /*bitmaps.get(0)*/ testGroup;
+        selfieBitmap = /*faceCropper(bitmaps.get(1))*/ faceCropper(testSelfie);
 
         // Some math here to preserve aspect ratio
         // Just comments for example.
@@ -939,7 +942,7 @@ public class PhotoTest extends AppCompatActivity {
         // Create canvas for drawing
         Canvas canvas = new Canvas(finalBitmap);
         canvas.drawBitmap(bitmap1, new Matrix(), null);
-        canvas.drawBitmap(overlayBitmap, marginLeft, marginTop, null);
+        canvas.drawBitmap(overlayBitmap, droppedMarginLeft, droppedMarginTop, null);
         return finalBitmap;
     }
 
