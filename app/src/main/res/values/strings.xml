@@ -10,4 +10,5 @@
     <string name="retake">Retake</string>
     <string name="scale_down">-</string>
     <string name="scale_up">+</string>
+    <string name="save_merge">Save</string>
 </resources>

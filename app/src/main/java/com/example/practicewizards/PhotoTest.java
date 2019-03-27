@@ -130,6 +130,7 @@ public class PhotoTest extends AppCompatActivity {
             Log.e(TAG, "Failed to create Photo File Name");
             e.printStackTrace();
         }
+        /*
         mergeBackgroundHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -157,7 +158,7 @@ public class PhotoTest extends AppCompatActivity {
                     @Override
                     public void run() {
                         Picasso.with(getApplicationContext())
-                                .load(new File(mergedSelfieFileName))
+                                .load(new File(selfieFileName))
                                 .resizeDimen(R.dimen.size1, R.dimen.size1)
                                 .onlyScaleDown()
                                 .into(selfieTestView);
@@ -165,12 +166,17 @@ public class PhotoTest extends AppCompatActivity {
                 });
             }
         });
+        */
 
+        Picasso.with(getApplicationContext())
+                .load(new File(selfieFileName))
+                .resizeDimen(R.dimen.size1, R.dimen.size1)
+                .onlyScaleDown()
+                .into(selfieTestView);
 
-
-
+        // Insert images into views
         groupTestView.setImageBitmap(groupBitmap);
-        selfieTestView.setImageBitmap(createGreenGrayBitmap(selfieBitmap));
+        //selfieTestView.setImageBitmap(selfieBitmap);
 
 
         // Set scaleDown button to invisible by default, can't scale down from size1. No size0.
@@ -179,11 +185,15 @@ public class PhotoTest extends AppCompatActivity {
         isInvisible = true;
 
         //Long-Click-Listener for the selfieTestView drag and drop
-        selfieTestView.setOnLongClickListener(new View.OnLongClickListener(){
+        selfieTestView.setOnLongClickListener(new View.OnLongClickListener() {
             public boolean onLongClick(View v) {
+                // Clip item of text
                 ClipData.Item item = new ClipData.Item((CharSequence)v.getTag());
+                // Returns a clip description object contained in clip data
+                // Held as text (strings)
                 String[] mimeTypes = {ClipDescription.MIMETYPE_TEXT_PLAIN};
 
+                // Create ClipData from view's tag (label), the mimeTypes, and the Item Clip Data
                 ClipData dragData = new ClipData(v.getTag().toString(), mimeTypes, item);
                 View.DragShadowBuilder myShadow = new View.DragShadowBuilder(selfieTestView);
 
