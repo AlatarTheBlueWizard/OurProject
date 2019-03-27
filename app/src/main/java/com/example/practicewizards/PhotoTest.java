@@ -88,7 +88,8 @@ public class PhotoTest extends AppCompatActivity {
 
     // File saving for our selfieBitmap
     private String mergedSelfieFileName;
-    private File mergedSelfieFileFolder;
+    private String mergedGroupFileName;
+    private File fileFolder;
     private boolean faceDetected = true;
 
     // Margins of where the selfie image was dropped
@@ -105,7 +106,7 @@ public class PhotoTest extends AppCompatActivity {
         Gson gson = new Gson();
         Intent intent = getIntent();
         String bitmapsJson = intent.getStringExtra("BitmapArray");
-        String groupFileName = intent.getStringExtra("GroupFileName");
+        final String groupFileName = intent.getStringExtra("GroupFileName");
         selfieFileName = intent.getStringExtra("SelfieFileName");
 
         Type listType = new TypeToken<ArrayList<Bitmap>>(){}.getType();
@@ -141,6 +142,7 @@ public class PhotoTest extends AppCompatActivity {
             Log.e(TAG, "Failed to create Photo File Name");
             e.printStackTrace();
         }
+        //For Selfie Bitmap File
         mergeBackgroundHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -150,11 +152,14 @@ public class PhotoTest extends AppCompatActivity {
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
-                Bitmap mergedSelfieBitmap = selfieBitmap;
-                mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
+                selfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
                 try {
                     fOut.flush();
                     fOut.close();
+                    //Recycle Selfie Bitmap to save RAM
+                    selfieBitmap.recycle();
+                    //Help Garbage Cleaner
+                    selfieBitmap = null;
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -177,11 +182,32 @@ public class PhotoTest extends AppCompatActivity {
             }
         });
 
-
-
-
         groupTestView.setImageBitmap(groupBitmap);
-        selfieTestView.setImageBitmap(selfieBitmap);
+        //For Group Bitmap File
+        mergeBackgroundHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                FileOutputStream fOut = null;
+                try {
+                    fOut = new FileOutputStream(mergedGroupFileName);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                groupBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
+                try {
+                    fOut.flush();
+                    fOut.close();
+                    //Recycle Selfie Bitmap to save RAM
+                    groupBitmap.recycle();
+                    //Help Garbage Cleaner
+                    groupBitmap = null;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        //selfieTestView.setImageBitmap(selfieBitmap);
 
 
         // Set scaleDown button to invisible by default, can't scale down from size1. No size0.
@@ -831,11 +857,11 @@ public class PhotoTest extends AppCompatActivity {
             Log.e(TAG, "Directory not created");
 
         // Create folder from the abstract pathname created above (imageFile)
-        mergedSelfieFileFolder = new File(imageFile, "CameraImages");
+        fileFolder = new File(imageFile, "CameraImages");
 
         //if photo folder doesn't exist
-        if(!mergedSelfieFileFolder.exists()) {
-            mergedSelfieFileFolder.mkdirs(); // Make sub-directory under parent
+        if(!fileFolder.exists()) {
+            fileFolder.mkdirs(); // Make sub-directory under parent
         }
     }
 
@@ -845,13 +871,13 @@ public class PhotoTest extends AppCompatActivity {
      * file that is prepended with ".jpg" and gets the path from the photo file.
      * @throws IOException if working with file fails
      */
-    private String createPhotoFileName()throws IOException {
+    private void createPhotoFileName()throws IOException {
         //adds a date format for the timestamp of the photo taken
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String prepend = "PHOTO_" + timeStamp + "_";
         try {
             //if photo folder does not exist...
-            if (!mergedSelfieFileFolder.exists()) {
+            if (!fileFolder.exists()) {
                 throw new NullPointerException("Photo Folder does not exist");
             }
         }
@@ -866,12 +892,20 @@ public class PhotoTest extends AppCompatActivity {
         // Don't create to temporary files if selfiePhotoFileName already exists
         if (mergedSelfieFileName == null) {
             Log.i(TAG, "File Name doesn't exist. Create it.");
-            File photoFile = File.createTempFile(prepend, ".jpg", mergedSelfieFileFolder);
+            File photoFile = File.createTempFile(prepend, ".jpg", fileFolder);
             mergedSelfieFileName = photoFile.getAbsolutePath();
             Log.i(TAG, mergedSelfieFileName);
         }
-        //return photo filename
-        return mergedSelfieFileName;
+
+        //creates temporary photo file with ".jpg" suffix which is then prepended with
+        //existing photo folder.
+        // Don't create to temporary files if selfiePhotoFileName already exists
+        if (mergedGroupFileName == null) {
+            Log.i(TAG, "File Name doesn't exist. Create it.");
+            File photoFile = File.createTempFile(prepend, ".jpg", fileFolder);
+            mergedGroupFileName = photoFile.getAbsolutePath();
+            Log.i(TAG, mergedGroupFileName);
+        }
     }
 
     /**
@@ -889,7 +923,7 @@ public class PhotoTest extends AppCompatActivity {
                     e.printStackTrace();
                 }
                 //bitmapOverlayToCenter(group, bitmaps.get(1));
-                Bitmap mergedSelfieBitmap = bitmapOverlayMerge(groupBitmap, selfieBitmap);
+                Bitmap mergedSelfieBitmap = bitmapOverlayMerge(BitmapFactory.decodeFile(mergedGroupFileName), BitmapFactory.decodeFile(mergedSelfieFileName));
                 mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
                 try {
                     fOut.flush();
