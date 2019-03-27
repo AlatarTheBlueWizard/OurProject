@@ -118,8 +118,8 @@ public class PhotoTest extends AppCompatActivity {
         Bitmap testSelfie = BitmapFactory.decodeResource(getResources(), R.drawable.smile);
 
         // Group photo is first because it was taken first
-        groupBitmap  = /*bitmaps.get(0)*/ testGroup;
-        selfieBitmap = /*faceCropper(bitmaps.get(1))*/ faceCropper(testSelfie);
+        groupBitmap  = bitmaps.get(0);
+        selfieBitmap = faceCropper(bitmaps.get(1));
 
         // Some math here to preserve aspect ratio
         // Just comments for example.

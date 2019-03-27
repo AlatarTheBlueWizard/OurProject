@@ -44,13 +44,13 @@
 
     <Button
         android:id="@+id/scaleDown"
-        android:layout_width="37dp"
+        android:layout_width="30dp"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentBottom="true"
-        android:layout_marginStart="119dp"
+        android:layout_marginStart="133dp"
         android:layout_marginEnd="90dp"
-        android:layout_marginBottom="63dp"
+        android:layout_marginBottom="62dp"
         android:background="@drawable/circle_button"
         android:onClick="scaleDown"
         android:text="-"
@@ -58,19 +58,19 @@
         android:visibility="visible" />
 
     <Button
-        android:id="@+id/saveState"
-        android:layout_width="73dp"
-        android:layout_height="40dp"
+        android:id="@+id/button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
-        android:layout_marginStart="168dp"
-        android:layout_marginEnd="169dp"
-        android:layout_marginBottom="158dp"
+        android:layout_marginStart="162dp"
+        android:layout_marginEnd="162dp"
+        android:layout_marginBottom="165dp"
+        android:background="#262626"
         android:onClick="saveState"
-        android:text="Save"
-        android:textColor="#FFF"
-        android:visibility="visible" />
+        android:text="@string/save_state"
+        android:textColor="#FFF" />
 
 
 </RelativeLayout>
