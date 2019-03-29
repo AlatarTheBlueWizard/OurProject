@@ -824,6 +824,14 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
         });
 
     }
+
+    /**
+     * Takes two Bitmap Images and uses the first Bitmap as a base canvas, then draws the second
+     * Bitmap on top of that from specific coordinates.
+     * @param bitmap1 base Bitmap that acts as basis for the Canvas
+     * @param overlayBitmap Bitmap to be drawn on top of the Canvas
+     * @return returns a single bitmap from the two merged bitmaps
+     */
     public Bitmap bitmapOverlayMerge(Bitmap bitmap1, Bitmap overlayBitmap) {
         int bitmap1Width = bitmap1.getWidth();
         int bitmap1Height = bitmap1.getHeight();
@@ -853,6 +861,12 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
         return finalBitmap;
     }
 
+    /**
+     * Takes a bitmap image uses Android's built in Face Detection API to detect a face within the
+     * image and crop it in closer to detected face
+     * @param bitmap image to be processed
+     * @return returns cropped version of original bitmap
+     */
     public Bitmap faceCropper(Bitmap bitmap) {
         //Declare Face Detector
         FaceDetector faceDetector = new
