@@ -165,7 +165,7 @@ public class GroupActivity extends AppCompatActivity {
             try {
                 // createPhotoFolder() should have already been called
                 Log.i(TAG, "Write the photo to the photo filename");
-                fileOutputStream = new FileOutputStream(createPhotoFileName()); // open file
+                fileOutputStream = new FileOutputStream(groupPhotoFileName); // open file
                 fileOutputStream.write(bytes); // Write the bytes to the file
                 Log.d(TAG, "File Name: " + groupPhotoFileName);
 
@@ -183,7 +183,7 @@ public class GroupActivity extends AppCompatActivity {
             } finally {
                 // Close image
                 Log.i(TAG, "Close the output stream");
-                image.close();
+                image.close(); // Close image
                 if (fileOutputStream != null) {
                     try {
                         fileOutputStream.close();
@@ -213,8 +213,6 @@ public class GroupActivity extends AppCompatActivity {
                             // SUPPORT new and old devices
                             if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED ||
                                     afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
-                                // Picture has begun to be saved
-                                saveStarted = true;
                                 startStillCapture();
                                 Log.i(TAG, "AF Locked");
                             }
@@ -227,6 +225,8 @@ public class GroupActivity extends AppCompatActivity {
                                                @NonNull CaptureRequest request,
                                                @NonNull TotalCaptureResult result) {
                     super.onCaptureCompleted(session, request, result);
+                    // Picture has begun to be saved
+                    saveStarted = true;
                     process(result); // Start Still Capture
 
                     // Stop streaming the camera. Hold the state
@@ -274,8 +274,37 @@ public class GroupActivity extends AppCompatActivity {
         setContentView(R.layout.activity_group);
         getWindow().getDecorView().setBackgroundColor(Color.argb(255, 0, 100, 100));
 
+        // Array of Needed Permission Strings
+        // Camera permission is handled in a callback
+        String[] permissions = new String[]{
+                Manifest.permission.WRITE_EXTERNAL_STORAGE, // INDEX 0
+                Manifest.permission.READ_EXTERNAL_STORAGE   // INDEX 1
+        };
+
+        // Now check to make sure all permissions are granted
+        if (!checkPermissions(permissions)) {
+            // If not granted, show error
+            Toast.makeText(this, "Must allow file saving permissions",
+                    Toast.LENGTH_SHORT).show();
+        } else {
+            // Get our photo folder ready
+            createPhotoFolder();
+
+            // Log
+            Log.i(TAG, "Files Location" + groupPhotoFolder.getAbsolutePath());
+        }
+
+        // Try to create a unique photo file
+        try {
+            createPhotoFileName();
+        } catch (IOException e) {
+            Log.e(TAG, "Error in calling createPhotoFileName()");
+            e.printStackTrace();
+        }
+
         // Set the groupView
         groupView = findViewById(R.id.groupView);
+
 
         groupTakeImageButton = findViewById(R.id.btn_takeGroup);
         groupTakeImageButton.setOnClickListener(new View.OnClickListener() {
@@ -320,25 +349,7 @@ public class GroupActivity extends AppCompatActivity {
             }
         }); // End of onClickListener initialization
 
-        // Array of Needed Permission Strings
-        // Camera permission is handled in a callback
-        String[] permissions = new String[]{
-                Manifest.permission.WRITE_EXTERNAL_STORAGE, // INDEX 0
-                Manifest.permission.READ_EXTERNAL_STORAGE   // INDEX 1
-        };
 
-        // Now check to make sure all permissions are granted
-        if (!checkPermissions(permissions)) {
-            // If not granted, show error
-            Toast.makeText(this, "Must allow file saving permissions",
-                    Toast.LENGTH_SHORT).show();
-        } else {
-            // Get our photo folder ready
-            createPhotoFolder();
-
-            // Log
-            Log.i(TAG, "Files Location" + groupPhotoFolder.getAbsolutePath());
-        }
     }
 
     /**
@@ -544,9 +555,12 @@ public class GroupActivity extends AppCompatActivity {
                 }
                 //Set the image size to be the width and height of the texture view
                 imageSize = new Size(groupView.getWidth(), groupView.getHeight());
-                // image reader with group view's width, height, and maxImages is just 1
+                // image reader with group view's width, height, and maxImages is 2 because
+                // "discarding all-but-the-newest Image requires temporarily acquiring two
+                // Image at once." (https://developer.android.com/reference/android/
+                //                              media/ImageReader#acquireLatestImage())
                 imageReader = ImageReader.newInstance(groupView.getWidth(), groupView.getHeight(),
-                        ImageFormat.JPEG, 1);
+                        ImageFormat.JPEG, 2);
                 //Set image reader's available listener
                 imageReader.setOnImageAvailableListener(groupOnImageAvailableListener,
                         groupBackgroundHandler);
@@ -756,13 +770,6 @@ public class GroupActivity extends AppCompatActivity {
                                                      @NonNull CaptureRequest request,
                                                      long timestamp, long frameNumber) {
                             super.onCaptureStarted(session, request, timestamp, frameNumber);
-                            // Try to create a unique photo file
-                            try {
-                                createPhotoFileName();
-                            } catch (IOException e) {
-                                Log.e(TAG, "Error in calling createPhotoFileName()");
-                                e.printStackTrace();
-                            }
                         }
                     };
             // Call capture! Give it the builder and the stillCaptureCallback

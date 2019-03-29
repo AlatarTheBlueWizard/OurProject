@@ -176,7 +176,7 @@ public class SelfieAcitivity extends AppCompatActivity {
                 if (!selfiePhotoFolder.exists())
                     Log.e(TAG, "Called create photo folder, it still doesn't exist" +
                             selfiePhotoFolder.mkdirs());
-                fileOutputStream = new FileOutputStream(createPhotoFileName()); // open file
+                fileOutputStream = new FileOutputStream(selfiePhotoFileName); // open file
                 fileOutputStream.write(bytes); // Write the bytes to the file
                 Log.d(TAG, "File Name: " + selfiePhotoFileName);
 
@@ -287,6 +287,15 @@ public class SelfieAcitivity extends AppCompatActivity {
 
         // Get our photo folder ready
         createPhotoFolder();
+
+        // Try to create a unique photo file
+        try {
+            Log.d(TAG, "call createPhotoFileName() in stillCapCallback");
+            createPhotoFileName();
+        } catch (IOException e) {
+            Log.e(TAG, "Error in calling createPhotoFileName()");
+            e.printStackTrace();
+        }
 
         // Log
         Log.i(TAG, "Files Location" + selfiePhotoFolder.getAbsolutePath());
@@ -507,9 +516,12 @@ public class SelfieAcitivity extends AppCompatActivity {
                         CameraCharacteristics.LENS_FACING_FRONT) {
                     //Set the image size to be the width and height of the texture view
                     imageSize = new Size(selfieView.getWidth(), selfieView.getHeight());
-                    // image reader with selfie view's width, height, and maxImages is just 1
+                    // image reader with group view's width, height, and maxImages is 2 because
+                    // "discarding all-but-the-newest Image requires temporarily acquiring two
+                    // Image at once." (https://developer.android.com/reference/android/
+                    //                              media/ImageReader#acquireLatestImage())
                     imageReader = ImageReader.newInstance(selfieView.getWidth(), selfieView.getHeight(),
-                            ImageFormat.JPEG, 1);
+                            ImageFormat.JPEG, 2);
                     //Set image reader's available listener
                     imageReader.setOnImageAvailableListener(selfieOnImageAvailableListener,
                             selfieBackgroundHandler);
@@ -734,14 +746,6 @@ public class SelfieAcitivity extends AppCompatActivity {
                                                      @NonNull CaptureRequest request,
                                                      long timestamp, long frameNumber) {
                             super.onCaptureStarted(session, request, timestamp, frameNumber);
-                            // Try to create a unique photo file
-                            try {
-                                Log.d(TAG, "call createPhotoFileName() in stillCapCallback");
-                                createPhotoFileName();
-                            } catch (IOException e) {
-                                Log.e(TAG, "Error in calling createPhotoFileName()");
-                                e.printStackTrace();
-                            }
                         }
                     };
             Log.d(TAG, "Begin Capture");

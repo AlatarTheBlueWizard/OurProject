@@ -110,17 +110,18 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
         selfieFileName = intent.getStringExtra("SelfieFileName");
 
         Type listType = new TypeToken<ArrayList<Bitmap>>(){}.getType();
-        final List<Bitmap> bitmaps = new Gson().fromJson(bitmapsJson, listType);
+        List<Bitmap> bitmaps = new Gson().fromJson(bitmapsJson, listType);
 
-        groupTestView = (ImageView)findViewById(R.id.groupTestView);
-        selfieTestView = (ImageView)findViewById(R.id.selfieTestView);
-
-        Bitmap testGroup = BitmapFactory.decodeResource(getResources(), R.drawable.group2);
-        Bitmap testSelfie = BitmapFactory.decodeResource(getResources(), R.drawable.smile);
+        groupTestView = findViewById(R.id.groupTestView);
+        selfieTestView = findViewById(R.id.selfieTestView);
 
         // Group photo is first because it was taken first
         groupBitmap  = bitmaps.get(0);
-        selfieBitmap = faceCropper(bitmaps.get(1));
+        selfieBitmap = faceCropper(bitmaps.get(1)); // Crop Selfie Bitmap
+
+        // Clean up list of bitmaps
+        bitmaps.clear();
+        bitmaps = null;  // Help GC
 
         // Some math here to preserve aspect ratio
         // Just comments for example.
@@ -146,12 +147,21 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
             @Override
             public void run() {
                 FileOutputStream fOut = null;
+                // Try to create a file output stream
                 try {
                     fOut = new FileOutputStream(mergedSelfieFileName);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
-                selfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
+                // Try to compress selfieBitmap if not null
+                try {
+                    selfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
+                }
+                catch (NullPointerException nullPtr) {
+                    Log.e(TAG, "Selfie Bitmap is Null");
+                    nullPtr.printStackTrace();
+                }
+                // Try to flush and close file output stream
                 try {
                     fOut.flush();
                     fOut.close();
@@ -181,21 +191,30 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
             }
         });
 
-        groupTestView.setImageBitmap(groupBitmap);
         //For Group Bitmap File
         mergeBackgroundHandler.post(new Runnable() {
             @Override
             public void run() {
                 FileOutputStream fOut = null;
+                // Try to create a file output stream
                 try {
                     fOut = new FileOutputStream(mergedGroupFileName);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
-                groupBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
+                // Try to compress selfieBitmap if not null
+                try {
+                    groupBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
+                }
+                catch (NullPointerException nullPtr) {
+                    Log.e(TAG, "Selfie Bitmap is Null");
+                    nullPtr.printStackTrace();
+                }
+                // Try to flush and close file output stream
                 try {
                     fOut.flush();
                     fOut.close();
+
                     //Recycle Selfie Bitmap to save RAM
                     groupBitmap.recycle();
                     //Help Garbage Cleaner
@@ -205,9 +224,21 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
                 }
             }
         });
-
-        //selfieTestView.setImageBitmap(selfieBitmap);
-
+        // Post after saving groupBitmap, load bitmap from file into group view
+        mergeBackgroundHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                // Use picasso to scale down and maintain aspect ratio
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Picasso.with(getApplicationContext())
+                                .load(new File(mergedGroupFileName))
+                                .into(groupTestView);
+                    }
+                });
+            }
+        });
 
         // Set scaleDown button to invisible by default, can't scale down from size1. No size0.
         findViewById(R.id.scaleDown).setVisibility(Button.INVISIBLE);
@@ -225,7 +256,7 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
         stv.setTag("DRAGGABLE IMAGE");
         stv.setOnLongClickListener(this);
         //set drag event listener for defined layout
-        findViewById(R.id.rLayout1).setOnDragListener(this);
+        findViewById(R.id.selfieTestView).setOnDragListener(this);
     }
 
     @Override
@@ -412,94 +443,6 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
             isInvisible = true;
         }
     }
-
-
-    //blend function using paint
-    //May need to create new drawables for colors (errors)
-    private Bitmap getARGBImage() {
-
-        // Create black image
-        BitmapFactory.Options opt = new BitmapFactory.Options();
-        opt.inPreferredConfig = Bitmap.Config.ARGB_8888;
-
-        // Get resources returns the drawable folder attached to this context (activity)
-        // but we don't have the selfie photo in the drawable folder... so there is nothing
-        // much useful there. It returns null (I tried it). And from my research there is no
-        // way to code the image into the drawable folder. That must be done by hand but of course
-        // we know we can't do that ;) haha. So... we need to somehow perform this same functionality
-        // with the photos we do have.
-
-        // Problem is these decode functions below...
-        //Bitmaps Red, Green, Blue, and AlphaGray
-        Bitmap red = createRedGrayBitmap(selfieBitmap);
-        Bitmap green = createGreenGrayBitmap(selfieBitmap);
-        Bitmap blue = createBlueGrayBitmap(selfieBitmap);
-        Bitmap alphaGray = createGrayScale(selfieBitmap);
-
-
-
-        int width = red.getWidth();   // failed because red is null
-        int height = red.getHeight(); // same
-
-
-        // ARGB stands for Alpha Red Green Blue configuration
-        Bitmap result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        result.eraseColor(Color.BLACK);
-        // Done!
-
-
-
-
-        // Get regular image back
-        Paint redP = new Paint();
-        redP.setShader(new BitmapShader(red, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
-        redP.setColorFilter(new PorterDuffColorFilter(Color.RED, PorterDuff.Mode.MULTIPLY));
-        redP.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SCREEN));
-
-        Paint greenP = new Paint();
-        greenP.setShader(new BitmapShader(green, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
-        greenP.setColorFilter(new PorterDuffColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY));
-        greenP.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SCREEN));
-
-        Paint blueP = new Paint();
-        blueP.setShader(new BitmapShader(blue, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
-        blueP.setColorFilter(new PorterDuffColorFilter(Color.BLUE, PorterDuff.Mode.MULTIPLY));
-        blueP.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SCREEN));
-
-        Canvas c = new Canvas(result);
-        c.drawRect(0, 0, width, height, redP);
-        c.drawRect(0, 0, width, height, greenP);
-        c.drawRect(0, 0, width, height, blueP);
-
-        // Done!
-
-        // Create alpha photo, fully opaque, and make the background transparent
-        Bitmap alpha = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        int[] alphaPix = new int[width * height];
-        alphaGray.getPixels(alphaPix, 0, width, 0, 0, width, height);
-
-        int count = width * height;
-        for (int i = 0; i < count; ++i) {
-            alphaPix[i] = alphaPix[i] << 8;
-        }
-        alpha.setPixels(alphaPix, 0, width, 0, 0, width, height);
-
-        Paint alphaP = new Paint();
-        alphaP.setAntiAlias(true);
-        alphaP.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
-
-        c.drawBitmap(alpha, 0, 0, alphaP);
-
-        red.recycle();
-        green.recycle();
-        blue.recycle();
-        alphaGray.recycle();
-        alpha.recycle();
-
-        // Return created bitmap
-        return result;
-    }
-
 
     /**
      * Creates a red grayscale selfie bitmap. Uses the createGrayScale method after the red
@@ -888,6 +831,7 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
         int bitmap2Height = overlayBitmap.getHeight();
 
 
+        // Can remove later?
         float marginLeft = (float) (bitmap1Width - bitmap2Width);
         float marginTop = (float) (bitmap1Height - bitmap2Height);
 
@@ -901,7 +845,7 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
         }
 
         // Create final bitmap from group bitmap
-        Bitmap finalBitmap = Bitmap.createBitmap(bitmap1Width, bitmap1Height, groupBitmap.getConfig());
+        Bitmap finalBitmap = Bitmap.createBitmap(bitmap1Width, bitmap1Height,bitmap1.getConfig());
         // Create canvas for drawing
         Canvas canvas = new Canvas(finalBitmap);
         canvas.drawBitmap(bitmap1, new Matrix(), null);
@@ -932,7 +876,14 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
         }
 
         //Create Final Bitmap
-        Bitmap tempBitmap = Bitmap.createBitmap(bitmap, (int) theFace.getPosition().x, (int) theFace.getPosition().y, (int) theFace.getWidth(), (int) theFace.getHeight());
+        Bitmap tempBitmap = Bitmap.createBitmap(bitmap,
+                (int) theFace.getPosition().x,
+                (int) theFace.getPosition().y,
+                (int) theFace.getWidth(),
+                (int) theFace.getHeight());
+
+        // Free our faceDetector
+        faceDetector.release();
 
         return tempBitmap;
     }
