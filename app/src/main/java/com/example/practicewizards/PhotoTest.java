@@ -114,12 +114,9 @@ public class PhotoTest extends AppCompatActivity {
         groupTestView = (ImageView)findViewById(R.id.groupTestView);
         selfieTestView = (ImageView)findViewById(R.id.selfieTestView);
 
-        Bitmap testGroup = BitmapFactory.decodeResource(getResources(), R.drawable.group2);
-        Bitmap testSelfie = BitmapFactory.decodeResource(getResources(), R.drawable.smile);
-
         // Group photo is first because it was taken first
-        groupBitmap  = /*bitmaps.get(0)*/ testGroup;
-        selfieBitmap = /*faceCropper(bitmaps.get(1))*/ faceCropper(testSelfie);
+        groupBitmap  = bitmaps.get(0);
+        selfieBitmap = faceCropper(bitmaps.get(1));
 
         // Some math here to preserve aspect ratio
         // Just comments for example.
@@ -141,7 +138,9 @@ public class PhotoTest extends AppCompatActivity {
             Log.e(TAG, "Failed to create Photo File Name");
             e.printStackTrace();
         }
-        /*
+        // Post on the main thread a runnable to save the cropped selfieBitmap
+        // We don't want bitmaps taking up RAM, save to files temporarily in lei of
+        // saving the final merge the user likes
         mergeBackgroundHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -177,13 +176,7 @@ public class PhotoTest extends AppCompatActivity {
                 });
             }
         });
-        */
 
-        Picasso.with(getApplicationContext())
-                .load(new File(selfieFileName))
-                .resizeDimen(R.dimen.size1, R.dimen.size1)
-                .onlyScaleDown()
-                .into(selfieTestView);
 
         // Insert images into views
         groupTestView.setImageBitmap(groupBitmap);
@@ -366,7 +359,14 @@ public class PhotoTest extends AppCompatActivity {
             }
             return false;
         }*/
-    }
+
+        // Recycle bitmaps to save RAM
+        groupBitmap.recycle();
+        selfieBitmap.recycle();
+        // Help Garbage Cleaner
+        groupBitmap = null;
+        selfieBitmap = null;
+    } // End onCreate()
 
     /**
      * Returns a resource representing the current dp the image should be scaled to
@@ -570,7 +570,6 @@ public class PhotoTest extends AppCompatActivity {
         // Disclude G and B, we want Red
         int alpha;
         int red;
-
 
         /*
         Loop through all the pixels and retrieve its pixel amount
@@ -885,7 +884,7 @@ public class PhotoTest extends AppCompatActivity {
     }
 
     /**
-     * Used to save state of photos
+     * Saves finally
      * @param view
      */
     public void saveState(View view) {
@@ -899,7 +898,7 @@ public class PhotoTest extends AppCompatActivity {
                     e.printStackTrace();
                 }
                 //bitmapOverlayToCenter(group, bitmaps.get(1));
-                Bitmap mergedSelfieBitmap = bitmapOverlayMerge();
+                Bitmap mergedSelfieBitmap = bitmapOverlayMerge(groupBitmap, selfieBitmap);
                 mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
                 try {
                     fOut.flush();
@@ -928,6 +927,8 @@ public class PhotoTest extends AppCompatActivity {
         });
 
     }
+
+
     public Bitmap bitmapOverlayMerge(Bitmap bitmap1, Bitmap overlayBitmap) {
         int bitmap1Width = bitmap1.getWidth();
         int bitmap1Height = bitmap1.getHeight();
