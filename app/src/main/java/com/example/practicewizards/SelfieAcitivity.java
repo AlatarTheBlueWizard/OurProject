@@ -376,6 +376,8 @@ public class SelfieAcitivity extends AppCompatActivity {
         // and saved the image
         // make sure we have a saved image. Double check also the bitmap
         if (picTaken) {
+            // First set take pic button to invisible
+            findViewById(R.id.btn_takeSelfie).setVisibility(View.INVISIBLE);
             // Post to decode the file
             selfieBackgroundHandler.post(new Runnable() {
                 @Override
