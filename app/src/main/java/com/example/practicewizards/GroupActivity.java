@@ -30,6 +30,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.text.format.Time;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
@@ -37,8 +38,11 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 import com.google.gson.Gson;
+import com.squareup.picasso.Picasso;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -48,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Timer;
 
 /**
  * Main Activity class
@@ -175,6 +180,83 @@ public class GroupActivity extends AppCompatActivity {
                 bitmap = BitmapFactory.decodeFile(groupPhotoFileName);
                 Log.i(TAG, "File saved and bitmap created");
 
+                // Update the UI
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // We're done saving, set next button visible
+                        findViewById(R.id.to_selfie).setVisibility(View.VISIBLE);
+                        /*
+                        ExifInterface exifInterface = null;
+                        try {
+                            exifInterface = new ExifInterface(groupPhotoFileName);
+                            // See if the returned getAttribute string tag equals "6"
+                            // If so we need to rotate image
+                            // Left Landscape
+                            if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("6")){
+                                Matrix matrix = new Matrix();
+                                // Add 90 to create portrait bitmap
+                                // plan to rotate bitmap 90 degrees to portrait mode
+                                matrix.postRotate(90);
+                                Log.i(TAG, "Rotate right 90 degrees");
+                                // Create a new bitmap from the desired bitmap (member variable)
+                                // With no offset in x and y and its original width/height
+                                // But with a different matrix rotation
+                                bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
+                                        bitmap.getHeight(), matrix, true);
+                            }
+                            // Right Landscape
+                            else if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION)
+                                    .equals("8")) {
+                                Matrix matrix = new Matrix();
+                                // Subtract 90 to create portrait bitmap
+                                // plan to rotate bitmap 90 degrees to portrait mode
+                                matrix.postRotate(-90);
+                                Log.i(TAG, "Rotate left 90 degrees");
+                                // Create a new bitmap from the desired bitmap (member variable)
+                                // With no offset in x and y and its original width/height
+                                // But with a different matrix rotation
+                                bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
+                                        bitmap.getHeight(), matrix, true);
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        */
+                        // Hide texture view but keep space dimensions
+                        findViewById(R.id.groupView).setVisibility(View.INVISIBLE);
+                        // Allow user to click next
+                        // Find the view and set its visibility on
+                        final ImageView imageView = findViewById(R.id.groupImageDisplayView);
+                        // Show user image
+                        imageView.setVisibility(View.VISIBLE);
+                        //imageView.setImageBitmap(bitmap);
+                        Picasso.with(getApplicationContext())
+                                .load(new File(groupPhotoFileName))
+                                .into(imageView);
+
+                        Log.d(TAG, "Set Display View to visible");
+
+                        imageView.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                // Now hide from user
+                                imageView.setVisibility(View.INVISIBLE);
+                                // And reopen live stream
+                                findViewById(R.id.groupView).setVisibility(View.VISIBLE);
+                                // Make sure bitmap is not null
+                                if (bitmap != null) {
+                                    // Free up resources
+                                    bitmap.recycle();
+                                    bitmap = null; // Help GC
+                                }
+                            }
+                        }, 3000);
+
+                        //groupTakeImageButton.setText(R.string.retake);
+                    }
+                });
+
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (NullPointerException nullPtr) {
@@ -229,6 +311,7 @@ public class GroupActivity extends AppCompatActivity {
                     saveStarted = true;
                     process(result); // Start Still Capture
 
+                    /* TRYING NEW WAY
                     // Stop streaming the camera. Hold the state
                     try {
                         session.stopRepeating(); // Stop repeating requests
@@ -239,6 +322,7 @@ public class GroupActivity extends AppCompatActivity {
                         Log.e(TAG, "Error in closing camera");
                         e.printStackTrace();
                     }
+                    */
                 }
             };
     private CaptureRequest.Builder groupCaptureRequestBuilder;
@@ -313,39 +397,72 @@ public class GroupActivity extends AppCompatActivity {
                 // Don't call any methods unless camera is ready!
                 // If the picture has not been taken, take it!
                 // Make sure user isn't faster than us and won't break our app
-                if (isReady && !picTaken && bitmap == null) {
-                    // Call lock focus to begin taking our picture!
-                    lockFocus();
-                    groupTakeImageButton.setText(R.string.retake);
-                }
+                //if (isReady && !picTaken && bitmap == null) {
+                    // Post onto the queue
+                    groupBackgroundHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            // First set next button to invisible, not ready yet
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    findViewById(R.id.to_selfie).setVisibility(View.INVISIBLE);
+                                }
+                            });
+
+                            // Then Call lock focus to begin taking our picture!
+                            lockFocus();
+                        }
+                    });
+               // }
+                /*
                 // else when clicked after picture has been taken
                 // Reset the view and set up cameras again and change the text
                 // Set pic taken back to false
                 else {
-                    // Delete last saved image
-                    if (picTaken && groupPhotoFileName != null) {
-                        Log.i(TAG, "Delete old photo");
-                        File fDelete = new File(groupPhotoFileName);
-                        // Make sure it exists
-                        if (fDelete.exists()) {
-                            // Delete the file and set the string filename to null
-                            // No more pic taken
-                            fDelete.delete();
-                            groupPhotoFileName = null; // delete string filename
-                            picTaken = false;    // picture not taken
-                            saveStarted = false; // nothing saved anymore
+                    // Post onto the queue
+                    groupBackgroundHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                             DON'T DELETE IT,  JUST OVERWRITE IT
+                            // Delete last saved image
+                            if (picTaken && groupPhotoFileName != null) {
+                                Log.i(TAG, "Delete old photo");
+                                File fDelete = new File(groupPhotoFileName);
+                                // Make sure it exists
+                                if (fDelete.exists()) {
+                                    // Delete the file and set the string filename to null
+                                    // No more pic taken
+                                    fDelete.delete();
+                                    groupPhotoFileName = null; // delete string filename
+                                    picTaken = false;    // picture not taken
+                                    saveStarted = false; // nothing saved anymore
+                                }
+                            }
+
+                            // May be able to remove this entirely
+                            //while (!isReady)
+                              //  ;
+
+                            // Update UI
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+
+                                    // Pause momentarily and then resume again.
+                                    //onPause();
+                                    //onResume();
+                                    Log.d(TAG, "Reset Button Text to Take Pic");
+                                    // Reset text
+                                    groupTakeImageButton.setText(R.string.take_group);
+                                    // Reset bitmap, help Garbage Collector free up the buffer faster
+                                    bitmap = null;
+                                }
+                            });
                         }
-                    }
-                    // Pause momentarily and then resume again.
-                    onPause();
-                    onResume();
-                    while (!isReady)
-                        ;
-                    // Reset text
-                    groupTakeImageButton.setText(R.string.take_group);
-                    // Reset bitmap, help Garbage Collector free up the buffer faster
-                    bitmap = null;
+                    });
                 }
+                */
             }
         }); // End of onClickListener initialization
 
@@ -362,7 +479,7 @@ public class GroupActivity extends AppCompatActivity {
         // Don't start next activity if the user hasn't taken a picture
         // and saved the image
         // make sure we have a saved image. Double check also the bitmap
-        if (picTaken && bitmap != null) {
+        if (picTaken) {
             ExifInterface exifInterface = null;
             try {
                 exifInterface = new ExifInterface(groupPhotoFileName);

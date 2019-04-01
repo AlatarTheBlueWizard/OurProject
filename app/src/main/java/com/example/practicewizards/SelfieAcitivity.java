@@ -435,7 +435,7 @@ public class SelfieAcitivity extends AppCompatActivity {
 
         // Start thread
         startBackgroundThread();
-
+      
         // See if view is available
         if(selfieView.isAvailable()) {
             // Set up and connect
