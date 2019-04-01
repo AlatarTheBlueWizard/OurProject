@@ -176,9 +176,7 @@ public class GroupActivity extends AppCompatActivity {
 
                 // Set picTaken to true, picture and file saving have been successful
                 picTaken = true;
-                // Save the image to outer class
-                bitmap = BitmapFactory.decodeFile(groupPhotoFileName);
-                Log.i(TAG, "File saved and bitmap created");
+                Log.i(TAG, "File saved");
 
                 // Update the UI
                 runOnUiThread(new Runnable() {
@@ -186,43 +184,6 @@ public class GroupActivity extends AppCompatActivity {
                     public void run() {
                         // We're done saving, set next button visible
                         findViewById(R.id.to_selfie).setVisibility(View.VISIBLE);
-                        /*
-                        ExifInterface exifInterface = null;
-                        try {
-                            exifInterface = new ExifInterface(groupPhotoFileName);
-                            // See if the returned getAttribute string tag equals "6"
-                            // If so we need to rotate image
-                            // Left Landscape
-                            if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("6")){
-                                Matrix matrix = new Matrix();
-                                // Add 90 to create portrait bitmap
-                                // plan to rotate bitmap 90 degrees to portrait mode
-                                matrix.postRotate(90);
-                                Log.i(TAG, "Rotate right 90 degrees");
-                                // Create a new bitmap from the desired bitmap (member variable)
-                                // With no offset in x and y and its original width/height
-                                // But with a different matrix rotation
-                                bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
-                                        bitmap.getHeight(), matrix, true);
-                            }
-                            // Right Landscape
-                            else if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION)
-                                    .equals("8")) {
-                                Matrix matrix = new Matrix();
-                                // Subtract 90 to create portrait bitmap
-                                // plan to rotate bitmap 90 degrees to portrait mode
-                                matrix.postRotate(-90);
-                                Log.i(TAG, "Rotate left 90 degrees");
-                                // Create a new bitmap from the desired bitmap (member variable)
-                                // With no offset in x and y and its original width/height
-                                // But with a different matrix rotation
-                                bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
-                                        bitmap.getHeight(), matrix, true);
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        */
                         // Hide texture view but keep space dimensions
                         findViewById(R.id.groupView).setVisibility(View.INVISIBLE);
                         // Allow user to click next
@@ -230,7 +191,7 @@ public class GroupActivity extends AppCompatActivity {
                         final ImageView imageView = findViewById(R.id.groupImageDisplayView);
                         // Show user image
                         imageView.setVisibility(View.VISIBLE);
-                        //imageView.setImageBitmap(bitmap);
+                        // Use picasso to pull the file image and center it inside of the image view
                         Picasso.with(getApplicationContext())
                                 .load(new File(groupPhotoFileName))
                                 .into(imageView);
@@ -394,27 +355,23 @@ public class GroupActivity extends AppCompatActivity {
         groupTakeImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Don't call any methods unless camera is ready!
-                // If the picture has not been taken, take it!
-                // Make sure user isn't faster than us and won't break our app
-                //if (isReady && !picTaken && bitmap == null) {
-                    // Post onto the queue
-                    groupBackgroundHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            // First set next button to invisible, not ready yet
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    findViewById(R.id.to_selfie).setVisibility(View.INVISIBLE);
-                                }
-                            });
+                // Post onto the queue
+                groupBackgroundHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        // First set next button to invisible, not ready yet
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                findViewById(R.id.to_selfie).setVisibility(View.INVISIBLE);
+                            }
+                        });
 
-                            // Then Call lock focus to begin taking our picture!
-                            lockFocus();
-                        }
-                    });
-               // }
+                        // Then Call lock focus to begin taking our picture!
+                        lockFocus();
+                    }
+                });
+                // }
                 /*
                 // else when clicked after picture has been taken
                 // Reset the view and set up cameras again and change the text
@@ -475,65 +432,74 @@ public class GroupActivity extends AppCompatActivity {
      * @param view reference to views state
      */
     public void startSelfieActivity(View view) {
-
+        // MAY BE ABLE TO REMOVE PICTAKEN STUFF COMPLETELY
         // Don't start next activity if the user hasn't taken a picture
         // and saved the image
         // make sure we have a saved image. Double check also the bitmap
         if (picTaken) {
-            ExifInterface exifInterface = null;
-            try {
-                exifInterface = new ExifInterface(groupPhotoFileName);
-                // See if the returned getAttribute string tag equals "6"
-                // Left Landscape
-                if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("6")){
-                    Matrix matrix = new Matrix();
-                    // Add 90 to create portrait bitmap
-                    // plan to rotate bitmap 90 degrees to portrait mode
-                    matrix.postRotate(90);
-                    // Create a new bitmap from the desired bitmap (member variable)
-                    // With no offset in x and y and its original width/height
-                    // But with a different matrix rotation
-                    bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
-                            bitmap.getHeight(), matrix, true);
+            // Post to decode the file
+            groupBackgroundHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    // Decode the file and then try to open its exifinterface data
+                    bitmap = BitmapFactory.decodeFile(groupPhotoFileName);
                 }
-                // Right Landscape
-                else if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("8")) {
-                    Matrix matrix = new Matrix();
-                    // Subtract 90 to create portrait bitmap
-                    // plan to rotate bitmap 90 degrees to portrait mode
-                    matrix.postRotate(-90);
-                    // Create a new bitmap from the desired bitmap (member variable)
-                    // With no offset in x and y and its original width/height
-                    // But with a different matrix rotation
-                    bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+            });
+            // Then post to rotate the image as necessary and start next activity
+            groupBackgroundHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        ExifInterface exifInterface = new ExifInterface(groupPhotoFileName);
+                        // See if the returned getAttribute string tag equals "6"
+                        // Left Landscape
+                        if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("6")) {
+                            Matrix matrix = new Matrix();
+                            // Add 90 to create portrait bitmap
+                            // plan to rotate bitmap 90 degrees to portrait mode
+                            matrix.postRotate(90);
+                            // Create a new bitmap from the desired bitmap (member variable)
+                            // With no offset in x and y and its original width/height
+                            // But with a different matrix rotation
+                            bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
+                                    bitmap.getHeight(), matrix, true);
+                        }
+                        // Right Landscape
+                        else if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("8")) {
+                            Matrix matrix = new Matrix();
+                            // Subtract 90 to create portrait bitmap
+                            // plan to rotate bitmap 90 degrees to portrait mode
+                            matrix.postRotate(-90);
+                            // Create a new bitmap from the desired bitmap (member variable)
+                            // With no offset in x and y and its original width/height
+                            // But with a different matrix rotation
+                            bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                        }
+                        Log.d(TAG, "ExifInterface " + exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    // Run on UI, go to next activity
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.i(TAG, "Selfie intent starting");
+                            //Declare new GSON object for serialization/deserialization
+                            Gson gson = new Gson();
+                            //Convert bitmap object to JSON string using GSON
+                            String bitmapJson = gson.toJson(bitmap);
+                            //Declare new intent to next activity
+                            Intent selfieIntent = new Intent(getApplicationContext(), SelfieAcitivity.class);
+                            //Add JSON string to intent
+                            selfieIntent.putExtra("Bitmap", bitmapJson);
+                            //Add filename for group photo
+                            selfieIntent.putExtra("GroupFileName", groupPhotoFileName);
+                            //Start next activity
+                            startActivity(selfieIntent);
+                        }
+                    });
                 }
-                Log.d(TAG, "ExifInterface "+ exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            Log.i(TAG, "Selfie intent starting");
-            //Declare new GSON object for serialization/deserialization
-            Gson gson = new Gson();
-            //Convert bitmap object to JSON string using GSON
-            String bitmapJson = gson.toJson(bitmap);
-            //Declare new intent to next activity
-            Intent selfieIntent = new Intent(this, SelfieAcitivity.class);
-            //Add JSON string to intent
-            selfieIntent.putExtra("Bitmap", bitmapJson);
-            //Add filename for group photo
-            selfieIntent.putExtra("GroupFileName", groupPhotoFileName);
-            //Start next activity
-            startActivity(selfieIntent);
-        }
-        // See if the save has started
-        else if (saveStarted) {
-            Toast.makeText(getApplicationContext(), "Just a sec while we save your photo",
-                    Toast.LENGTH_SHORT).show();
-        }
-        // Else image is null, make toast
-        else {
-            Toast.makeText(getApplicationContext(), R.string.error_pic_not_taken,
-                    Toast.LENGTH_SHORT).show();
+            });
         }
     }
 

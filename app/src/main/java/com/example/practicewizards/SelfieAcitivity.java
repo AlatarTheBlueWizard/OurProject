@@ -37,9 +37,11 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.squareup.picasso.Picasso;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -182,9 +184,47 @@ public class SelfieAcitivity extends AppCompatActivity {
 
                 // Set picTaken to true, picture and file saving have been successful
                 picTaken = true;
-                // Save the image to outer class
-                bitmap = BitmapFactory.decodeFile(selfiePhotoFileName);
-                Log.i(TAG, "File saved and bitmap created");
+                Log.i(TAG, "File saved");
+
+                // Update the UI
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // We're done saving, set next button visible
+                        findViewById(R.id.to_editor).setVisibility(View.VISIBLE);
+                        // Hide texture view but keep space dimensions
+                        findViewById(R.id.selfieView).setVisibility(View.INVISIBLE);
+                        // Allow user to click next
+                        // Find the view and set its visibility on
+                        final ImageView imageView = findViewById(R.id.selfieImageDisplayView);
+                        // Show user image
+                        imageView.setVisibility(View.VISIBLE);
+                        // Use picasso to pull the file image and center it inside of the image view
+                        Picasso.with(getApplicationContext())
+                                .load(new File(selfiePhotoFileName))
+                                .into(imageView);
+
+                        Log.d(TAG, "Set Display View to visible");
+
+                        imageView.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                // Now hide from user
+                                imageView.setVisibility(View.INVISIBLE);
+                                // And reopen live stream
+                                findViewById(R.id.selfieView).setVisibility(View.VISIBLE);
+                                // Make sure bitmap is not null
+                                if (bitmap != null) {
+                                    // Free up resources
+                                    bitmap.recycle();
+                                    bitmap = null; // Help GC
+                                }
+                            }
+                        }, 3000);
+
+                        //groupTakeImageButton.setText(R.string.retake);
+                    }
+                });
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (NullPointerException nullPtr) {
@@ -252,6 +292,7 @@ public class SelfieAcitivity extends AppCompatActivity {
                     process(result); // Start Still Capture
                     Log.i(TAG, "Results Processed");
 
+                    /* A BETTER WAY
                     // Stop streaming the camera. Hold the state
                     try {
                         Log.d(TAG, "Stop Repeating");
@@ -262,6 +303,7 @@ public class SelfieAcitivity extends AppCompatActivity {
                         Log.e(TAG, "Error in closing camera");
                         e.printStackTrace();
                     }
+                    */
                 }
             };
 
@@ -305,44 +347,22 @@ public class SelfieAcitivity extends AppCompatActivity {
         selfieTakeImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Don't call any methods unless camera is ready!
-                // If the picture has not been taken, take it!
-                if (isReady && !picTaken && bitmap == null) {
-                    // Call lock focus to begin taking our picture!
-                    lockFocus();
-                    selfieTakeImageButton.setText(R.string.retake);
-                }
-                // else when clicked after picture has been taken
-                // Reset the view and set up cameras again and change the text
-                // Set pic taken back to false
-                else {
-                    // Delete last saved image
-                    if (picTaken && selfiePhotoFileName != null) {
-                        Log.i(TAG, "Delete old photo");
-                        File fDelete = new File(selfiePhotoFileName);
-                        // Make sure it exists
-                        if (fDelete.exists()) {
-                            // Delete the file and set the string filename to null
-                            // No more pic taken
-                            fDelete.delete();
-                            selfiePhotoFileName = null; // no string representing a valid file
-                            picTaken = false;    // no picture taken
-                            saveStarted = false; // no file saved
-                        }
-                    }
-                    picTaken = false;
-                    // Pause momentarily and then resume again.
-                    onPause();
-                    onResume();
+                // Post onto the queue
+                selfieBackgroundHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        // First set next button to invisible, not ready yet
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                findViewById(R.id.to_editor).setVisibility(View.INVISIBLE);
+                            }
+                        });
 
-                    // forever loop until camera isReady
-                    while (!isReady)
-                        ;
-                    // Reset text
-                    selfieTakeImageButton.setText(R.string.take_selfie);
-                    // Reset bitmap, help Garbage Collector free up the buffer faster
-                    bitmap = null;
-                }
+                        // Then Call lock focus to begin taking our picture!
+                        lockFocus();
+                    }
+                });
             }
         }); // End of onClickListener initialization
     }
@@ -355,73 +375,85 @@ public class SelfieAcitivity extends AppCompatActivity {
         // Don't start next activity if the user hasn't taken a picture
         // and saved the image
         // make sure we have a saved image. Double check also the bitmap
-        if (picTaken && bitmap != null) {
-            // Make sure orientation of bitmap is correct
-            ExifInterface exifInterface = null;
-            try {
-                exifInterface = new ExifInterface(selfiePhotoFileName);
-                // See if the returned getAttribute string tag equals "6"
-                // Left Landscape
-                if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("6")){
-                    Matrix matrix = new Matrix();
-                    // Add 90 to create portrait bitmap
-                    // plan to rotate bitmap 90 degrees to portrait mode
-                    matrix.postRotate(90);
-                    // Create a new bitmap from the desired bitmap (member variable)
-                    // With no offset in x and y and its original width/height
-                    // But with a different matrix rotation
-                    bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        if (picTaken) {
+            // Post to decode the file
+            selfieBackgroundHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    // Decode the file and then try to open its exifinterface data
+                    bitmap = BitmapFactory.decodeFile(selfiePhotoFileName);
                 }
-                // Right Landscape
-                else if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("8")) {
-                    Matrix matrix = new Matrix();
-                    // Subtract 90 to create portrait bitmap
-                    // plan to rotate bitmap 90 degrees to portrait mode
-                    matrix.postRotate(-90);
-                    // Create a new bitmap from the desired bitmap (member variable)
-                    // With no offset in x and y and its original width/height
-                    // But with a different matrix rotation
-                    bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
-                            bitmap.getHeight(), matrix, true);
+            });
+            // Then post to rotate the image as necessary and start next activity
+            selfieBackgroundHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    // Make sure orientation of bitmap is correct
+                    ExifInterface exifInterface = null;
+                    try {
+                        exifInterface = new ExifInterface(selfiePhotoFileName);
+                        // See if the returned getAttribute string tag equals "6"
+                        // Left Landscape
+                        if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("6")) {
+                            Matrix matrix = new Matrix();
+                            // Add 90 to create portrait bitmap
+                            // plan to rotate bitmap 90 degrees to portrait mode
+                            matrix.postRotate(90);
+                            // Create a new bitmap from the desired bitmap (member variable)
+                            // With no offset in x and y and its original width/height
+                            // But with a different matrix rotation
+                            bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
+                                    bitmap.getHeight(), matrix, true);
+                        }
+                        // Right Landscape
+                        else if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION)
+                                .equals("8")) {
+                            Matrix matrix = new Matrix();
+                            // Subtract 90 to create portrait bitmap
+                            // plan to rotate bitmap 90 degrees to portrait mode
+                            matrix.postRotate(-90);
+                            // Create a new bitmap from the desired bitmap (member variable)
+                            // With no offset in x and y and its original width/height
+                            // But with a different matrix rotation
+                            bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
+                                    bitmap.getHeight(), matrix, true);
+                        }
+                        Log.d(TAG, "ExifInterface " + exifInterface
+                                .getAttribute(ExifInterface.TAG_ORIENTATION));
+                    } catch (IOException e) {
+                        Log.e(TAG, "File Access Error");
+                        e.printStackTrace();
+                    }
+                    // Run on UI, go to next activity
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.i(TAG, "Merge intent starting");
+                            // Get intent that created this activity to retrieve bitmap and group filename
+                            Intent intent = getIntent();
+                            String bitmapJson = intent.getStringExtra("Bitmap");
+                            String groupFileName = intent.getStringExtra("GroupFileName");
+
+
+                            Gson gson = new Gson();
+                            Bitmap groupBitmap = gson.fromJson(bitmapJson, Bitmap.class);
+
+                            // Create list of bitmaps to be passed
+                            List<Bitmap> bitmaps = new ArrayList<>();
+                            bitmaps.add(0, groupBitmap); // Index 0
+                            bitmaps.add(1, bitmap);      // Index 1
+
+                            String bitmapsJson = gson.toJson(bitmaps);
+
+                            Intent mergeIntent = new Intent(getApplicationContext(), PhotoTest.class);
+                            mergeIntent.putExtra("BitmapArray", bitmapsJson);    // Add bitmaps
+                            mergeIntent.putExtra("GroupFileName", groupFileName); // Add group photo
+                            mergeIntent.putExtra("SelfieFileName", selfiePhotoFileName); // Add selfie photo
+                            startActivity(mergeIntent);
+                        }
+                    });
                 }
-                Log.d(TAG, "ExifInterface "+ exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION));
-            } catch (IOException e) {
-                Log.e(TAG, "File Access Error");
-                e.printStackTrace();
-            }
-
-            Log.i(TAG, "Selfie intent starting");
-            // Get intent that created this activity to retrieve bitmap and group filename
-            Intent intent = getIntent();
-            String bitmapJson = intent.getStringExtra("Bitmap");
-            String groupFileName = intent.getStringExtra("GroupFileName");
-
-
-            Gson gson  = new Gson();
-            Bitmap groupBitmap = gson.fromJson(bitmapJson, Bitmap.class);
-
-            // Create list of bitmaps to be passed
-            List<Bitmap> bitmaps = new ArrayList<>();
-            bitmaps.add(0, groupBitmap); // Index 0
-            bitmaps.add(1, bitmap);      // Index 1
-
-            String bitmapsJson = gson.toJson(bitmaps);
-
-            Intent mergeIntent = new Intent(this, PhotoTest.class);
-            mergeIntent.putExtra("BitmapArray", bitmapsJson);    // Add bitmaps
-            mergeIntent.putExtra("GroupFileName",groupFileName); // Add group photo
-            mergeIntent.putExtra("SelfieFileName", selfiePhotoFileName); // Add selfie photo
-            startActivity(mergeIntent);
-        }
-        // See if the save has started
-        else if (saveStarted) {
-            Toast.makeText(getApplicationContext(), "Just a sec while we save your photo",
-                    Toast.LENGTH_SHORT).show();
-        }
-        // Else image is null, make toast
-        else {
-            Toast.makeText(getApplicationContext(), R.string.error_pic_not_taken,
-                    Toast.LENGTH_SHORT).show();
+            });
         }
     }
 

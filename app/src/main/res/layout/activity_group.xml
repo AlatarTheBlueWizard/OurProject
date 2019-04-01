@@ -51,14 +51,13 @@
         android:layout_width="wrap_content"
         android:layout_height="1200px"
         android:layout_alignParentBottom="true"
-        android:layout_marginBottom="104dp"
-        android:visibility="visible"/>
+        android:layout_marginBottom="104dp" />
 
     <ImageView
         android:id="@+id/groupImageDisplayView"
         android:layout_width="match_parent"
         android:layout_height="1200px"
-        android:scaleType="center"
+        android:scaleType="centerInside"
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="104dp"
         android:visibility="invisible" />
