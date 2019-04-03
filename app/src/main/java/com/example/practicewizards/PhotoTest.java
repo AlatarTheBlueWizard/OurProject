@@ -166,9 +166,9 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
                     fOut.flush();
                     fOut.close();
                     //Recycle Selfie Bitmap to save RAM
-                    selfieBitmap.recycle();
+                    //selfieBitmap.recycle();
                     //Help Garbage Cleaner
-                    selfieBitmap = null;
+                    //selfieBitmap = null;
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -216,9 +216,9 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
                     fOut.close();
 
                     //Recycle Selfie Bitmap to save RAM
-                    groupBitmap.recycle();
+                   // groupBitmap.recycle();
                     //Help Garbage Cleaner
-                    groupBitmap = null;
+                    //groupBitmap = null;
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
