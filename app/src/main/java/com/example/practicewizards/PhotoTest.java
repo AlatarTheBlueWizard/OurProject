@@ -23,6 +23,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.Image;
 import android.media.ImageReader;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -61,7 +62,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class PhotoTest extends AppCompatActivity implements View.OnDragListener, View.OnLongClickListener {
+public class PhotoTest extends AppCompatActivity implements View.OnTouchListener, View.OnDragListener {
     private static final String TAG = "MergeActivity";
     private int selfieResSize = 1;
     private static final int SELFIE_SIZE_THRESHOLD = 4;
@@ -251,16 +252,14 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
             Toast.makeText(getApplicationContext(), "No Face Detected", Toast.LENGTH_LONG);
         }
 
-        //Find all views and set tag to all draggable views
-        ImageView stv = (ImageView) findViewById(R.id.selfieTestView);
-        stv.setTag("DRAGGABLE IMAGE");
-        stv.setOnLongClickListener(this);
+        findViewById(R.id.selfieTestView).setOnTouchListener(this);
         //set drag event listener for defined layout
         findViewById(R.id.rLayout1).setOnDragListener(this);
+        findViewById(R.id.rLayout2).setOnDragListener(this);
     }
 
     @Override
-    public boolean onLongClick(View v) {
+    /*public boolean onLongClick(View v) {
         //Create a new ClipData.Item from the ImageView object's tag
         ClipData.Item item = new ClipData.Item((CharSequence)v.getTag());
         //Create a new ClipData using the tag as a label, the plain text MIME type, and
@@ -273,75 +272,59 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
         //Starts the drag
         v.startDrag(data, dragShadow, v, 0);
         return true;
+    }*/
+    @SuppressWarnings("deprecation")
+    public boolean onTouch(View view, MotionEvent event) {
+        if(event.getAction() == MotionEvent.ACTION_DOWN) {
+            View.DragShadowBuilder shadowBuilder = new View.DragShadowBuilder(view);
+            ClipData data = ClipData.newPlainText("id", view.getResources().getResourceEntryName(view.getId()));
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                view.startDragAndDrop(data, shadowBuilder, view, 0);
+            } else {
+                view.startDrag(data, shadowBuilder, view, 0);
+            }
+
+            view.setVisibility(View.INVISIBLE);
+            return true;
+        }
+        return false;
     }
 
     //This is the method that the system calls when it dispatches a drag event to the listener
     @Override
     public boolean onDrag(View v, DragEvent event) {
-        //Defines a variable to store the action type for the incoming event
-        int action = event.getAction();
-        //Handles each of the expected elements
-        switch(action) {
+        switch(event.getAction()) {
+            //signal for start of a drag and drop operation
             case DragEvent.ACTION_DRAG_STARTED:
-                //Determines if this View can accept the dragged data
-                if (event.getClipDescription().hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN)) {
-                    //returns true to indicate that the View can accept the dragged data
-                    return true;
-                }
-                //returns false. During the current drag and drop operation, this View
-                //will not receive events again until ACTION_DRAG_ENDED is sent.
-                return false;
+                break;
+            //the drag point has entered the bounding box of the view
             case DragEvent.ACTION_DRAG_ENTERED:
-                //Applies a GRAY or any color tint to the View. Return true; the return value is ignored
-                //v.getBackground().setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_IN);
-                //Invalidate the view to force a redraw in the new tint
-                v.invalidate();
-                return true;
-            case DragEvent.ACTION_DRAG_LOCATION:
-                //ignore the event
-                return true;
+                break;
+            //the user has moved the drag shadow outside the bounding box of the view
             case DragEvent.ACTION_DRAG_EXITED:
-                //Invalidate the view to force a redraw in the new tint
-                v.invalidate();
-                return true;
-            case DragEvent.ACTION_DROP:
-                //Gets the item containing the dragged data
-                ClipData.Item item = event.getClipData().getItemAt(0);
-                //Gets the text data from the item
-                String dragData = item.getText().toString();
-                //Displays a message containing the dragged data
-                Toast.makeText(this, "Dragged data is " + dragData, Toast.LENGTH_SHORT).show();
-                //Turns off any color tints
-                v.getBackground().clearColorFilter();
-                //invalidates the view to force a redraw
-                v.invalidate();
-
-                View vw = (View) event.getLocalState();
-                ViewGroup owner = (ViewGroup) vw.getParent();
-                owner.removeView(vw);   //remove the dragged view
-                //cast the view into RelativeLayout as our drag acceptable layout is Relative
-                RelativeLayout container = (RelativeLayout) v;
-                container.addView(vw);  //Add the dragged view
-                vw.setVisibility(View.VISIBLE); //finally set Visibility to VISIBLE
-                //Returns true. DragEvent.getResult() will return true
-                return true;
+                break;
+            //the drag and drop operation has concluded
             case DragEvent.ACTION_DRAG_ENDED:
-                //Turns off any color tinting
-                v.getBackground().clearColorFilter();
-                //Invalidates the view to force a redraw
-                v.invalidate();
-                //Does a getResult() and displays what happened
-                if (event.getResult())
-                    Toast.makeText(this, "The drop was handled.", Toast.LENGTH_SHORT).show();
-                else
-                    Toast.makeText(this, "The drop didn't work.", Toast.LENGTH_SHORT).show();
-                //returns true; the value is ignored
-                return true;
-            default:
-                Log.e("DragDrop", "Unknown action type received by OnDragListener.");
+                break;
+            //drag shadow has been released, the drag point is within the bounding box of the view
+            case DragEvent.ACTION_DROP:
+                View view = (View)event.getLocalState();
+                //make sure it is dropped in rLayout1 or 2
+                if(v.getId() == R.id.rLayout1 || v.getId() == R.id.rLayout2) {
+                    ViewGroup source = (ViewGroup) view.getParent();
+                    source.removeView(view);
+
+                    RelativeLayout target = (RelativeLayout) v;
+                    target.addView(view);
+
+                    String id = event.getClipData().getItemAt(0).getText().toString();
+                    Toast.makeText(this, id + "dropped!", Toast.LENGTH_SHORT).show();
+                }
+                //make view visible as we set visibility to invisible while starting drag
+                view.setVisibility(View.VISIBLE);
                 break;
         }
-        return false;
+        return true;
     }
 
     /**
