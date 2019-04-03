@@ -5,74 +5,82 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/gradient1"
-    android:id="@+id/rLayout1"
     tools:context=".PhotoTest">
+    <RelativeLayout android:id="@+id/rLayout1"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="center_vertical"
+        android:orientation="vertical">
+        <ImageView
+            android:id="@+id/groupTestView"
+            android:layout_width="match_parent"
+            android:layout_height="364dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <ImageView
-        android:id="@+id/groupTestView"
-        android:layout_width="match_parent"
-        android:layout_height="364dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        <ImageView
+            android:id="@+id/selfieTestView"
+            android:layout_width="match_parent"
+            android:layout_height="364dp"
+            android:layout_alignStart="@+id/groupTestView"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginStart="0dp"
+            android:layout_marginTop="0dp"
+            android:layout_marginBottom="366dp"
+            android:scaleType="center"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.565"
+            app:layout_constraintStart_toStartOf="parent" />
 
-    <ImageView
-        android:id="@+id/selfieTestView"
-        android:layout_width="match_parent"
-        android:layout_height="364dp"
-        android:layout_alignStart="@+id/groupTestView"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginStart="0dp"
-        android:layout_marginBottom="367dp"
-        android:scaleType="center"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.565"
-        app:layout_constraintStart_toStartOf="parent" />
+        <Button
+            android:id="@+id/scaleUp"
+            android:layout_width="30dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginEnd="133dp"
+            android:layout_marginBottom="62dp"
+            android:background="@drawable/circle_button"
+            android:onClick="scaleUp"
+            android:text="+"
+            android:textColor="#FFF" />
 
-    <Button
-        android:id="@+id/scaleUp"
-        android:layout_width="30dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginEnd="133dp"
-        android:layout_marginBottom="62dp"
-        android:background="@drawable/circle_button"
-        android:onClick="scaleUp"
-        android:text="+"
-        android:textColor="#FFF" />
+        <Button
+            android:id="@+id/scaleDown"
+            android:layout_width="30dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginStart="133dp"
+            android:layout_marginEnd="90dp"
+            android:layout_marginBottom="62dp"
+            android:background="@drawable/circle_button"
+            android:onClick="scaleDown"
+            android:text="-"
+            android:textColor="#FFF"
+            android:visibility="visible" />
 
-    <Button
-        android:id="@+id/scaleDown"
-        android:layout_width="30dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginStart="133dp"
-        android:layout_marginEnd="90dp"
-        android:layout_marginBottom="62dp"
-        android:background="@drawable/circle_button"
-        android:onClick="scaleDown"
-        android:text="-"
-        android:textColor="#FFF"
-        android:visibility="visible" />
-
-    <Button
-        android:id="@+id/saveState"
-        android:layout_width="73dp"
-        android:layout_height="40dp"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginStart="162dp"
-        android:layout_marginEnd="162dp"
-        android:layout_marginBottom="165dp"
-        android:background="#262626"
-        android:onClick="saveState"
-        android:text="@string/save_state"
-        android:textColor="#FFF" />
-
-
+        <Button
+            android:id="@+id/saveState"
+            android:layout_width="73dp"
+            android:layout_height="40dp"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginStart="162dp"
+            android:layout_marginEnd="162dp"
+            android:layout_marginBottom="165dp"
+            android:background="#262626"
+            android:onClick="saveState"
+            android:text="@string/save_state"
+            android:textColor="#FFF" />
+    </RelativeLayout>
+    <RelativeLayout android:id="@+id/rLayout2"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="vertical"/>
 </RelativeLayout>
