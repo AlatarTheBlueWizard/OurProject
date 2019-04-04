@@ -30,7 +30,6 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.text.format.Time;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
@@ -38,11 +37,8 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.Toast;
 import com.google.gson.Gson;
-import com.squareup.picasso.Picasso;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -52,7 +48,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Timer;
 
 /**
  * Main Activity class
@@ -130,6 +125,13 @@ public class GroupActivity extends AppCompatActivity {
     private Handler groupBackgroundHandler;
     private String groupCameraDeviceId; // for setup of the camera
 
+    // BOOLEAN LOGIC MEMBER VARIABLES
+    // Boolean representing whether picture has been taken or not
+    private boolean picTaken = false;
+    // Boolean representing whether or not the camera is ready or not
+    private boolean isReady = false;     // start out not ready
+    // Boolean representing whether or not the photo saving has started
+    private boolean saveStarted = false; // start out not starting a save
     // Bitmap of image
     private Bitmap bitmap;
 
@@ -165,47 +167,13 @@ public class GroupActivity extends AppCompatActivity {
                 Log.i(TAG, "Write the photo to the photo filename");
                 fileOutputStream = new FileOutputStream(groupPhotoFileName); // open file
                 fileOutputStream.write(bytes); // Write the bytes to the file
-                Log.i(TAG, "File saved");
+                Log.d(TAG, "File Name: " + groupPhotoFileName);
 
-                // Update the UI
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        // We're done saving, set next button visible
-                        findViewById(R.id.to_selfie).setVisibility(View.VISIBLE);
-                        // Hide texture view but keep space dimensions
-                        findViewById(R.id.groupView).setVisibility(View.INVISIBLE);
-                        // Allow user to click next
-                        // Find the view and set its visibility on
-                        final ImageView imageView = findViewById(R.id.groupImageDisplayView);
-                        // Show user image
-                        imageView.setVisibility(View.VISIBLE);
-                        // Use picasso to pull the file image and center it inside of the image view
-                        Picasso.with(getApplicationContext())
-                                .load(new File(groupPhotoFileName))
-                                .into(imageView);
-
-                        Log.d(TAG, "Set Display View to visible");
-
-                        imageView.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                // Now hide from user
-                                imageView.setVisibility(View.INVISIBLE);
-                                // And reopen live stream
-                                findViewById(R.id.groupView).setVisibility(View.VISIBLE);
-                                // Make sure bitmap is not null
-                                if (bitmap != null) {
-                                    // Free up resources
-                                    bitmap.recycle();
-                                    bitmap = null; // Help GC
-                                }
-                            }
-                        }, 3000);
-
-                        //groupTakeImageButton.setText(R.string.retake);
-                    }
-                });
+                // Set picTaken to true, picture and file saving have been successful
+                picTaken = true;
+                // Save the image to outer class
+                bitmap = BitmapFactory.decodeFile(groupPhotoFileName);
+                Log.i(TAG, "File saved and bitmap created");
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -257,7 +225,20 @@ public class GroupActivity extends AppCompatActivity {
                                                @NonNull CaptureRequest request,
                                                @NonNull TotalCaptureResult result) {
                     super.onCaptureCompleted(session, request, result);
+                    // Picture has begun to be saved
+                    saveStarted = true;
                     process(result); // Start Still Capture
+
+                    // Stop streaming the camera. Hold the state
+                    try {
+                        session.stopRepeating(); // Stop repeating requests
+                        closeCamera(); // Close camera
+                        // Set isReady to false, we're not ready
+                        isReady = false;
+                    } catch (CameraAccessException e) {
+                        Log.e(TAG, "Error in closing camera");
+                        e.printStackTrace();
+                    }
                 }
             };
     private CaptureRequest.Builder groupCaptureRequestBuilder;
@@ -329,22 +310,42 @@ public class GroupActivity extends AppCompatActivity {
         groupTakeImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Post onto the queue
-                groupBackgroundHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        // First set next button to invisible, not ready yet
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                findViewById(R.id.to_selfie).setVisibility(View.INVISIBLE);
-                            }
-                        });
-
-                        // Then Call lock focus to begin taking our picture!
-                        lockFocus();
+                // Don't call any methods unless camera is ready!
+                // If the picture has not been taken, take it!
+                // Make sure user isn't faster than us and won't break our app
+                if (isReady && !picTaken && bitmap == null) {
+                    // Call lock focus to begin taking our picture!
+                    lockFocus();
+                    groupTakeImageButton.setText(R.string.retake);
+                }
+                // else when clicked after picture has been taken
+                // Reset the view and set up cameras again and change the text
+                // Set pic taken back to false
+                else {
+                    // Delete last saved image
+                    if (picTaken && groupPhotoFileName != null) {
+                        Log.i(TAG, "Delete old photo");
+                        File fDelete = new File(groupPhotoFileName);
+                        // Make sure it exists
+                        if (fDelete.exists()) {
+                            // Delete the file and set the string filename to null
+                            // No more pic taken
+                            fDelete.delete();
+                            groupPhotoFileName = null; // delete string filename
+                            picTaken = false;    // picture not taken
+                            saveStarted = false; // nothing saved anymore
+                        }
                     }
-                });
+                    // Pause momentarily and then resume again.
+                    onPause();
+                    onResume();
+                    while (!isReady)
+                        ;
+                    // Reset text
+                    groupTakeImageButton.setText(R.string.take_group);
+                    // Reset bitmap, help Garbage Collector free up the buffer faster
+                    bitmap = null;
+                }
             }
         }); // End of onClickListener initialization
 
@@ -357,78 +358,66 @@ public class GroupActivity extends AppCompatActivity {
      * @param view reference to views state
      */
     public void startSelfieActivity(View view) {
-        // First set take pic button to invisible and next button to invisible
-        // User should not push anymore buttons :)
-        findViewById(R.id.to_selfie).setVisibility(View.INVISIBLE);     // Next button
-        findViewById(R.id.btn_takeGroup).setVisibility(View.INVISIBLE); // Take Pic button
-        // Post to decode the file
-        groupBackgroundHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                // Decode the file and then try to open its exifinterface data
-                bitmap = BitmapFactory.decodeFile(groupPhotoFileName);
-            }
-        });
-        // Then post to rotate the image as necessary and start next activity
-        groupBackgroundHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    ExifInterface exifInterface = new ExifInterface(groupPhotoFileName);
-                    // See if the returned getAttribute string tag equals "6"
-                    // Left Landscape
-                    if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("6")) {
-                        // Matrix for rotation
-                        Matrix matrix = new Matrix();
-                        // Add 90 to create portrait bitmap
-                        // plan to rotate bitmap 90 degrees to portrait mode
-                        matrix.postRotate(90);
-                        // Create a new bitmap from the desired bitmap (member variable)
-                        // With no offset in x and y and its original width/height
-                        // But with a different matrix rotation
-                        bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
-                                bitmap.getHeight(), matrix, true);
-                    }
-                    // Right Landscape
-                    else if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION)
-                            .equals("8")) {
-                        // Matrix for rotation
-                        Matrix matrix = new Matrix();
-                        // Subtract 90 to create portrait bitmap
-                        // plan to rotate bitmap 90 degrees to portrait mode
-                        matrix.postRotate(-90);
-                        // Create a new bitmap from the desired bitmap (member variable)
-                        // With no offset in x and y and its original width/height
-                        // But with a different matrix rotation
-                        bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
-                                bitmap.getHeight(), matrix, true);
-                    }
-                    Log.d(TAG, "ExifInterface " + exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                // Run on UI, go to next activity
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.i(TAG, "Selfie intent starting");
-                        //Declare new GSON object for serialization/deserialization
-                        Gson gson = new Gson();
-                        //Convert bitmap object to JSON string using GSON
-                        String bitmapJson = gson.toJson(bitmap);
-                        //Declare new intent to next activity
-                        Intent selfieIntent = new Intent(getApplicationContext(), SelfieAcitivity.class);
-                        //Add JSON string to intent
-                        selfieIntent.putExtra("Bitmap", bitmapJson);
-                        //Add filename for group photo
-                        selfieIntent.putExtra("GroupFileName", groupPhotoFileName);
-                        //Start next activity
-                        startActivity(selfieIntent);
-                    }
-                });
-            }
-        });
 
+        // Don't start next activity if the user hasn't taken a picture
+        // and saved the image
+        // make sure we have a saved image. Double check also the bitmap
+        if (picTaken && bitmap != null) {
+            ExifInterface exifInterface = null;
+            try {
+                exifInterface = new ExifInterface(groupPhotoFileName);
+                // See if the returned getAttribute string tag equals "6"
+                // Left Landscape
+                if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("6")){
+                    Matrix matrix = new Matrix();
+                    // Add 90 to create portrait bitmap
+                    // plan to rotate bitmap 90 degrees to portrait mode
+                    matrix.postRotate(90);
+                    // Create a new bitmap from the desired bitmap (member variable)
+                    // With no offset in x and y and its original width/height
+                    // But with a different matrix rotation
+                    bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
+                            bitmap.getHeight(), matrix, true);
+                }
+                // Right Landscape
+                else if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("8")) {
+                    Matrix matrix = new Matrix();
+                    // Subtract 90 to create portrait bitmap
+                    // plan to rotate bitmap 90 degrees to portrait mode
+                    matrix.postRotate(-90);
+                    // Create a new bitmap from the desired bitmap (member variable)
+                    // With no offset in x and y and its original width/height
+                    // But with a different matrix rotation
+                    bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                }
+                Log.d(TAG, "ExifInterface "+ exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            Log.i(TAG, "Selfie intent starting");
+            //Declare new GSON object for serialization/deserialization
+            Gson gson = new Gson();
+            //Convert bitmap object to JSON string using GSON
+            String bitmapJson = gson.toJson(bitmap);
+            //Declare new intent to next activity
+            Intent selfieIntent = new Intent(this, SelfieAcitivity.class);
+            //Add JSON string to intent
+            selfieIntent.putExtra("Bitmap", bitmapJson);
+            //Add filename for group photo
+            selfieIntent.putExtra("GroupFileName", groupPhotoFileName);
+            //Start next activity
+            startActivity(selfieIntent);
+        }
+        // See if the save has started
+        else if (saveStarted) {
+            Toast.makeText(getApplicationContext(), "Just a sec while we save your photo",
+                    Toast.LENGTH_SHORT).show();
+        }
+        // Else image is null, make toast
+        else {
+            Toast.makeText(getApplicationContext(), R.string.error_pic_not_taken,
+                    Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**
@@ -617,9 +606,12 @@ public class GroupActivity extends AppCompatActivity {
             } catch (CameraAccessException e) {
                 Log.e(TAG, "Camera failed to open");
                 e.printStackTrace();
-                return;
+                return; // Don't let us get to setting isReady to true
             }
         }
+        // After setup camera and connect camera have successfully been completed, we're ready
+        // to take the picture!
+        isReady = true;
     }
 
     /**
@@ -645,7 +637,7 @@ public class GroupActivity extends AppCompatActivity {
         groupCaptureRequestBuilder = groupCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
         groupCaptureRequestBuilder.addTarget(previewSurface);
         groupCameraDevice.createCaptureSession(Arrays.asList(previewSurface,
-                                                              imageReader.getSurface()),
+                imageReader.getSurface()),
                 new CameraCaptureSession.StateCallback() {
 
 
