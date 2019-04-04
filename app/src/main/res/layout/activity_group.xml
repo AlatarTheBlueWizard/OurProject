@@ -43,8 +43,7 @@
         android:layout_marginEnd="80dp"
         android:layout_marginBottom="41dp"
         android:onClick="startSelfieActivity"
-        android:text="@string/to_next"
-        android:visibility="invisible" />
+        android:text="@string/to_next" />
 
     <TextureView
         android:id="@+id/groupView"
@@ -53,12 +52,4 @@
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="104dp" />
 
-    <ImageView
-        android:id="@+id/groupImageDisplayView"
-        android:layout_width="match_parent"
-        android:layout_height="1200px"
-        android:scaleType="centerInside"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="104dp"
-        android:visibility="invisible" />
 </RelativeLayout>

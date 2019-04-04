@@ -256,7 +256,7 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
         stv.setTag("DRAGGABLE IMAGE");
         stv.setOnLongClickListener(this);
         //set drag event listener for defined layout
-        findViewById(R.id.rLayout1).setOnDragListener(this);
+        findViewById(R.id.selfieTestView).setOnDragListener(this);
     }
 
     @Override
@@ -293,7 +293,7 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
                 return false;
             case DragEvent.ACTION_DRAG_ENTERED:
                 //Applies a GRAY or any color tint to the View. Return true; the return value is ignored
-                //v.getBackground().setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_IN);
+                v.getBackground().setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_IN);
                 //Invalidate the view to force a redraw in the new tint
                 v.invalidate();
                 return true;
@@ -319,7 +319,7 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
                 View vw = (View) event.getLocalState();
                 ViewGroup owner = (ViewGroup) vw.getParent();
                 owner.removeView(vw);   //remove the dragged view
-                //cast the view into RelativeLayout as our drag acceptable layout is Relative
+                //cast the view into LinearLayout as our drag acceptable layout is LinearLayout
                 RelativeLayout container = (RelativeLayout) v;
                 container.addView(vw);  //Add the dragged view
                 vw.setVisibility(View.VISIBLE); //finally set Visibility to VISIBLE
@@ -639,8 +639,8 @@ public class PhotoTest extends AppCompatActivity implements View.OnDragListener,
 
                 // Ramp up conversion to single value
                 red = blue = green = (int)(PERCENT_RED * red +
-                                            PERCENT_BLUE * blue +
-                                              PERCENT_GREEN + green);
+                        PERCENT_BLUE * blue +
+                        PERCENT_GREEN + green);
 
                 // sets a pixel (x,y) on output bitmap to ARGB
                 bitmap.setPixel(x, y, Color.argb(alpha, red, green, blue));

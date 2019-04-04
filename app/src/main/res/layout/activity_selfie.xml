@@ -50,14 +50,6 @@
         android:text="@string/instruction_selfie"
         android:textAlignment="center"
         android:textColor="#000"
-        android:textSize="24sp" />
-
-    <ImageView
-        android:id="@+id/selfieImageDisplayView"
-        android:layout_width="match_parent"
-        android:layout_height="1200px"
-        android:scaleType="center"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="104dp"
-        android:visibility="invisible" />
+        android:textSize="24sp"
+        android:visibility="visible" />
 </RelativeLayout>
