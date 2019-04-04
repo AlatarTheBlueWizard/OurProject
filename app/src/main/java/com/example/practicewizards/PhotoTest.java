@@ -61,8 +61,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class PhotoTest extends AppCompatActivity implements View.OnDragListener, View.OnLongClickListener {
-    private static final String TAG = "MergeActivity";
+public class PhotoTest extends AppCompatActivity implements View.OnTouchListener, View.OnDragListener {
+    private static final String TAG = "PhotoTest";
     private int selfieResSize = 1;
     private static final int SELFIE_SIZE_THRESHOLD = 4;
     // Keep track of selfie file name
