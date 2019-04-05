@@ -159,9 +159,9 @@ public class PhotoTest extends AppCompatActivity {
                     fOut.flush();
                     fOut.close();
                     //Recycle Selfie Bitmap to save RAM
-                    selfieBitmap.recycle();
+                 //   selfieBitmap.recycle();
                     //Help Garbage Cleaner
-                    selfieBitmap = null;
+                   // selfieBitmap = null;
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -293,24 +293,24 @@ public class PhotoTest extends AppCompatActivity {
                     // signals an out-of-range x and y coordinate from the bounding box
                     case DragEvent.ACTION_DRAG_EXITED:
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_EXITED");
-                        /*
+
                         x_cord = (int) event.getX();
                         y_cord = (int) event.getY();
                         layoutParams.leftMargin = x_cord;
                         layoutParams.topMargin = y_cord;
                         v.setLayoutParams(layoutParams);
-                        */
+
                         break;
                     // returned to the view if the view is within bounding box parameters
                     case DragEvent.ACTION_DRAG_LOCATION:
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_LOCATION");
-                        /*
+
                         x_cord = (int) event.getX();
                         y_cord = (int) event.getY();
                         layoutParams.leftMargin = x_cord;
                         layoutParams.topMargin = y_cord;
                         v.setLayoutParams(layoutParams);
-                        */
+
                         break;
                     // signals end of drag/drop
                     case DragEvent.ACTION_DRAG_ENDED:
@@ -806,7 +806,8 @@ public class PhotoTest extends AppCompatActivity {
                     e.printStackTrace();
                 }
                 //bitmapOverlayToCenter(group, bitmaps.get(1));
-                Bitmap mergedSelfieBitmap = bitmapOverlayMerge(BitmapFactory.decodeFile(mergedGroupFileName), BitmapFactory.decodeFile(mergedSelfieFileName));
+                Bitmap mergedSelfieBitmap = bitmapOverlayMerge(
+                        BitmapFactory.decodeFile(mergedGroupFileName), selfieBitmap);
                 mergedSelfieBitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
                 try {
                     fOut.flush();
