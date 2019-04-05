@@ -160,11 +160,15 @@ public class SelfieAcitivity extends AppCompatActivity {
         @Override
         public void run() {
             Log.i(TAG, "Running ImageSaver on last image");
+            // Get the bytes
             ByteBuffer byteBuffer = image.getPlanes()[0].getBuffer();
             // Remaining bytes
             byte[] bytes = new byte[byteBuffer.remaining()];
             // Call get to retrieve all the bytes representing the image data
             byteBuffer.get(bytes);
+            // Decode now rather than later, just from the bytes, not a file.
+            // Hopefully will be faster
+            bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
             // Now put bytes into file
             FileOutputStream fileOutputStream = null;
             try {
@@ -185,19 +189,81 @@ public class SelfieAcitivity extends AppCompatActivity {
                     public void run() {
                         // We're done saving, set next button visible
                         findViewById(R.id.to_editor).setVisibility(View.VISIBLE);
+
+                        // Make sure orientation of bitmap is correct
+                        ExifInterface exifInterface;
+                        try {
+                            Log.d(TAG, "Flipping right");
+                            exifInterface = new ExifInterface(selfiePhotoFileName);
+                            // See if the returned getAttribute string tag equals "6"
+                            // Left Landscape
+                            if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION).equals("6")) {
+                                Matrix matrix = new Matrix();
+                                // Add 90 to create portrait bitmap
+                                // plan to rotate bitmap 90 degrees to portrait mode
+                                matrix.postRotate(90);
+                                // Create a new bitmap from the desired bitmap (member variable)
+                                // With no offset in x and y and its original width/height
+                                // But with a different matrix rotation
+                                bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
+                                        bitmap.getHeight(), matrix, true);
+                            }
+                            // Right Landscape
+                            else if (exifInterface.getAttribute(ExifInterface.TAG_ORIENTATION)
+                                    .equals("8")) {
+                                Log.d(TAG, "Flipping left");
+                                Matrix matrix = new Matrix();
+                                // Subtract 90 to create portrait bitmap
+                                // plan to rotate bitmap 90 degrees to portrait mode
+                                matrix.postRotate(-90);
+                                // Create a new bitmap from the desired bitmap (member variable)
+                                // With no offset in x and y and its original width/height
+                                // But with a different matrix rotation
+                                bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
+                                        bitmap.getHeight(), matrix, true);
+                            }
+                        } catch (IOException e) {
+                            Log.e(TAG, "File Access Error");
+                            e.printStackTrace();
+                        }
+
+                        // FLIP HORIZONTALLY
+                        // Find the center (x, y) pair of the image using width and height
+                        float centerX = bitmap.getWidth() / 2f; // floating point division
+                        float centerY = bitmap.getHeight() / 2f;
+
+                        // Create Matrix to use in creating bitmap
+                        Matrix matrix = new Matrix();
+                        // Post scale the matrix to -1, causing a flip in the x direction,
+                        // 1 in the y (stay the same for y) and giving it the center pixels
+                        matrix.postScale(-1, 1, centerX, centerY);
+
+                        // Now create the final correctly formed bitmap
+                        bitmap = Bitmap.createBitmap(bitmap, 0, 0,
+                                bitmap.getWidth(), bitmap.getHeight(),
+                                matrix, true); // Do quality filtering
+                        // DONE
+
                         // Hide texture view but keep space dimensions
                         findViewById(R.id.selfieView).setVisibility(View.INVISIBLE);
                         // Allow user to click next
                         // Find the view and set its visibility on
                         final ImageView imageView = findViewById(R.id.selfieImageDisplayView);
+
                         // Show user image
                         imageView.setVisibility(View.VISIBLE);
+
+                        // Load into imageView
+                        imageView.setImageBitmap(bitmap);
+
+                        /*
                         // Use picasso to pull the file image and center it inside of the image view
                         Picasso.with(getApplicationContext())
                                 .load(new File(selfiePhotoFileName))
                                 // Don't look in cache for file and don't save result in cache
                                 .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
                                 .into(imageView);
+                        */
 
                         Log.d(TAG, "Set Display View to visible");
 
