@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/gradient1"
     android:id="@+id/rLayout1"
-    tools:context=".PhotoTest">
+    tools:context=".MergeActivity">
 
     <ImageView
         android:id="@+id/groupTestView"

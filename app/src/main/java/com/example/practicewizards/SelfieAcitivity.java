@@ -517,7 +517,7 @@ public class SelfieAcitivity extends AppCompatActivity {
 
                         String bitmapsJson = gson.toJson(bitmaps);
 
-                        Intent mergeIntent = new Intent(getApplicationContext(), PhotoTest.class);
+                        Intent mergeIntent = new Intent(getApplicationContext(), MergeActivity.class);
                         mergeIntent.putExtra("BitmapArray", bitmapsJson);    // Add bitmaps
                         mergeIntent.putExtra("GroupFileName", groupFileName); // Add group photo
                         mergeIntent.putExtra("SelfieFileName", selfiePhotoFileName); // Add selfie photo
