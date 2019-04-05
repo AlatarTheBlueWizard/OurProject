@@ -100,8 +100,6 @@ public class PhotoTest extends AppCompatActivity implements View.OnTouchListener
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // First clean out cache
-        CacheManager.deleteCache(this); // Delete cache for this activity
         super.onCreate(savedInstanceState);
         startBackgroundThread();
         setContentView(R.layout.activity_photo_test);
@@ -126,15 +124,6 @@ public class PhotoTest extends AppCompatActivity implements View.OnTouchListener
         // Clean up list of bitmaps
         bitmaps.clear();
         bitmaps = null;  // Help GC
-
-        // Some math here to preserve aspect ratio
-        // Just comments for example.
-        // A preserved aspect ratio image is such that given
-        //      oldWidth / oldHeight == newWidth / newHeight
-        // Some Algebra gives us an equivalent equation
-        //      oldWidth / newWidth  == oldHeight / newHeight
-        // And if that's the truth than given a scale factor (lets say s) the ratios will be
-        // preserved: oldWidth / 2 == oldHeight / 2 in ratio. We are downsizing the image to half
 
         Log.d(TAG, "Selfie width: " + selfieBitmap.getWidth());
         Log.d(TAG, "Selfie height: " + selfieBitmap.getHeight());
@@ -185,12 +174,13 @@ public class PhotoTest extends AppCompatActivity implements View.OnTouchListener
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        Log.d(TAG, "Load saved image");
                         // Make sure we skip looking in cache
                         // MAYBE NOT? don't store the
                         // result of the Picasso resize in cache
                         Picasso.with(getApplicationContext())
                                 .load(new File(mergedSelfieFileName))
-                                .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
+                                //.memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
                                 .resizeDimen(R.dimen.size1, R.dimen.size1)
                                 .onlyScaleDown()
                                 .into(selfieTestView);
@@ -240,10 +230,11 @@ public class PhotoTest extends AppCompatActivity implements View.OnTouchListener
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        Log.d(TAG, "Load saved image");
                         // Don't look for image in cache and don't store Picasso result in cache
                         Picasso.with(getApplicationContext())
                                 .load(new File(mergedGroupFileName))
-                                .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
+                                //.memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
                                 .into(groupTestView);
                     }
                 });
