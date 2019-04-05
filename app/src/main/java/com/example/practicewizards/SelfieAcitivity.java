@@ -407,6 +407,23 @@ public class SelfieAcitivity extends AppCompatActivity {
                         bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
                                 bitmap.getHeight(), matrix, true);
                     }
+                    // Assume we need to flip in the X coordinates
+                    Log.d(TAG, "Flipping horizontally");
+
+                    // Find the center (x, y) pair of the image using width and height
+                    float centerX = bitmap.getWidth() / 2f; // floating point division
+                    float centerY = bitmap.getHeight() / 2f;
+
+                    // Create Matrix to use in creating bitmap
+                    Matrix matrix = new Matrix();
+                    // Post scale the matrix to -1, causing a flip in the x direction,
+                    // 1 in the y (stay the same for y) and giving it the center pixels
+                    matrix.postScale(-1, 1, centerX, centerY);
+
+                    // Now create the final correctly formed bitmap
+                    bitmap = Bitmap.createBitmap(bitmap, 0, 0,
+                                                 bitmap.getWidth(), bitmap.getHeight(),
+                                                 matrix, true); // Do quality filtering
                     Log.d(TAG, "ExifInterface " + exifInterface
                             .getAttribute(ExifInterface.TAG_ORIENTATION));
                 } catch (IOException e) {
