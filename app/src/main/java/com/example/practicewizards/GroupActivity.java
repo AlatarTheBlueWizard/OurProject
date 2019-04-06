@@ -56,8 +56,8 @@ import java.util.List;
 import java.util.Timer;
 
 /**
- * Main Activity class
- * initializes variables for use in various methods throughout main.
+ * Group Activity class
+ * initializes variables for use in various methods throughout this activity.
  * Uses TextureView to create a new SurfaceTextureListener.
  * Methods include actions such as setting up the camera, calls connectCamera()
  * Methods also handled are those such as the size changing, if it is destroyed,

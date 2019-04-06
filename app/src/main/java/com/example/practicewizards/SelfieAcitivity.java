@@ -54,6 +54,14 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * Selfie Activity class
+ * initializes variables for use in various methods throughout this activity, including passed information from Group Activity.
+ * Uses TextureView to create a new SurfaceTextureListener.
+ * Methods include actions such as setting up the camera, calls connectCamera()
+ * Methods also handled are those such as the size changing, if it is destroyed,
+ * or if it has updated.
+ */
 public class SelfieAcitivity extends AppCompatActivity {
     private static final String TAG = "SelfieAcitivty.java";
     private static int REQUEST_CAMERA_PERMISSION_RESULT = 0;
@@ -601,10 +609,8 @@ public class SelfieAcitivity extends AppCompatActivity {
 
     /**
      * Creates a Camera Manager Object and iterates through its CameraIdList to determine which camera ID is needed to connect the camera
-     * @param width
-     * Uses the the width of the texture view to determine image size width
-     * @param height
-     * Uses the the height of the texture view to determine image size height
+     * @param width Uses the the width of the texture view to determine image size width
+     * @param height Uses the the height of the texture view to determine image size height
      */
     private void setUpCamera(int width, int height) {
         CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
@@ -884,6 +890,7 @@ public class SelfieAcitivity extends AppCompatActivity {
      * if photo folder does not exist, notifies of its non existence, also creates a temp
      * file that is prepended with ".jpg" and gets the path from the photo file.
      * @throws IOException if working with file fails
+     * @return returns name of file containing the selfie image.
      */
     private String createPhotoFileName()throws IOException {
         //adds a date format for the timestamp of the photo taken
