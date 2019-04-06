@@ -369,7 +369,7 @@ public class SelfieAcitivity extends AppCompatActivity {
 
     /**
      * Creates views, also Logs the file location from public path.
-     *
+     * Sets onClickListener() of take pic button to post requests to the background handler.
      * @param savedInstanceState
      */
     @Override
@@ -398,6 +398,9 @@ public class SelfieAcitivity extends AppCompatActivity {
         Log.i(TAG, "Files Location" + selfiePhotoFolder.getAbsolutePath());
 
 
+        // Find the take pic button and set its onClickListener() to temporarily set
+        // Next button to INVISIBLE so user can't go next until file is saved. Then locks the
+        // focus of camera device for processing the capture request
         selfieTakeImageButton = findViewById(R.id.btn_takeSelfie);
         selfieTakeImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -423,7 +426,14 @@ public class SelfieAcitivity extends AppCompatActivity {
     }
 
     /**
-     * Starts next activity to merge the two pictures
+     * Starts next activity to merge the two photos.
+     * Take Pic button is made invisible to prevent further capture requests.
+     * Decodes image from file as a bitmap on background thread.
+     * Rotates the image for correct orientation for bitmap of selfie pic.
+     * Important: the phone will flip horizontally the image when decoded from a file.
+     * We rotate image first, then flip all pixels horizontally (using Matrix.postScale())
+     * to give correct type of Matrix to createBitmap() for the conversion.
+     * Uses GSON to create a JSON of the bitmap to be passed to SelfieActivity.
      * @param view reference to views state
      */
     public void startMergeActivity(View view) {
@@ -600,7 +610,11 @@ public class SelfieAcitivity extends AppCompatActivity {
 
 
     /**
-     * Creates a Camera Manager Object and iterates through its CameraIdList to determine which camera ID is needed to connect the camera
+     * Creates a Camera Manager Object and iterates through its CameraIdList to determine which
+     * camera ID is needed to connect the camera. Also creates the image reader  and sets its
+     * onImageAvailableListener()
+     * Important: some cameras have fixed focus, especially front facing cameras. We set a boolean
+     * to true if that is the case.
      * @param width
      * Uses the the width of the texture view to determine image size width
      * @param height
@@ -632,6 +646,7 @@ public class SelfieAcitivity extends AppCompatActivity {
                     selfieCameraDeviceId = cameraId; //create a parameter for this
 
                     // See if Auto Focus works on this camera
+                    // Some devices have Fixed Focus for front facing cameras
                     int[] afAvailableModes = cameraCharacteristics.
                             get(CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES);
                     if (afAvailableModes[0] == CameraMetadata.CONTROL_AE_MODE_OFF) {
@@ -649,6 +664,9 @@ public class SelfieAcitivity extends AppCompatActivity {
 
     /**
      * Uses a camera ID, a camera device, and a background handler to connect and open the camera
+     * This is called after setUpCamera(). Sees if permissions were granted before
+     * trying to open camera. Also checks the SDK version on the phone to see
+     * how to call openCamera().
      */
     private void connectCamera() {
         //create a camera manager object and retrieve its service context
