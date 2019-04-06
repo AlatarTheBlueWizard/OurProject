@@ -329,6 +329,9 @@ public class GroupActivity extends AppCompatActivity {
         groupView = findViewById(R.id.groupView);
 
 
+        // Find the take pic button and set its onClickListener() to temporarily set
+        // Next button to INVISIBLE so user can't go next until file is saved. Then locks the
+        // focus of camera device for processing the capture request
         groupTakeImageButton = findViewById(R.id.btn_takeGroup);
         groupTakeImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -356,8 +359,11 @@ public class GroupActivity extends AppCompatActivity {
     }
 
     /**
-     * Starts next activity to take selfie pic
-     *
+     * Starts next activity to take selfie pic.
+     * Take Pic button is made invisible to prevent further capture requests.
+     * Decodes image from file as a bitmap on background thread.
+     * Rotates the image for correct orientation for bitmap of group pic.
+     * Uses GSON to create a JSON of the bitmap to be passed to SelfieActivity
      * @param view reference to views state
      */
     public void startSelfieActivity(View view) {

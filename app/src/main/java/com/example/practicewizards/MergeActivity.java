@@ -3,6 +3,7 @@ package com.example.practicewizards;
 import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -13,6 +14,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.DragEvent;
@@ -445,8 +447,7 @@ public class MergeActivity extends AppCompatActivity {
     }
 
     /**
-     * When app is resumed, start background thread again, setup cameras again, connect to the
-     * camera. If the view is not available, set the view
+     * When app is resumed, start background thread again.
      */
     @Override
     protected void onResume() {
@@ -500,7 +501,7 @@ public class MergeActivity extends AppCompatActivity {
     }
 
     /**
-     * initializes declared background handler thread and sets a name for it
+     * Initializes declared background handler thread and sets a name for it
      * starts the thread and initializes the handler using the same thread
      */
     private void startBackgroundThread() {
@@ -622,6 +623,22 @@ public class MergeActivity extends AppCompatActivity {
     }
 
     /**
+     * Converts DP to Pixel. Used by overlayBitmap() to scale down bitmap using
+     * the getCurrentDimension() DP. Gets the applications resources given by the device
+     * to understand resolution of screen.
+     * @param dp is dp to convert
+     */
+    private int convertDpToPixel(int dp)
+    {
+        // Activity Resources from Device
+        Resources resources = this.getResources();
+        // Get the metrics of screen
+        DisplayMetrics metrics = resources.getDisplayMetrics();
+        // Convert from dp to px with following equation
+        return dp * (metrics.densityDpi / 160);
+    }
+
+    /**
      * Takes two Bitmap Images and uses the first Bitmap as a base canvas, then draws the second
      * Bitmap on top of that from specific coordinates.
      * @param bitmap1 base Bitmap that acts as basis for the Canvas
@@ -629,6 +646,14 @@ public class MergeActivity extends AppCompatActivity {
      * @return returns a single bitmap from the two merged bitmaps
      */
     public Bitmap bitmapOverlayMerge(Bitmap bitmap1, Bitmap overlayBitmap) {
+        // First scale down overlayBitmap (selfieBitmap) to current dimensions in dp.
+        // We call convertDpToPx() to convert dp to px for createScaledBitmap() to receive px as
+        // required.
+        /*
+        overlayBitmap = Bitmap.createScaledBitmap(overlayBitmap,
+                convertDpToPixel(getCurrentDimension()),
+                convertDpToPixel(getCurrentDimension()), true);
+                */
         int bitmap1Width = bitmap1.getWidth();
         int bitmap1Height = bitmap1.getHeight();
         int bitmap2Width = overlayBitmap.getWidth();
