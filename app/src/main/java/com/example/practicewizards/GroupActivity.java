@@ -287,7 +287,6 @@ public class GroupActivity extends AppCompatActivity {
 
     /**
      * Creates views, also Logs the file location from public path.
-     *
      * @param savedInstanceState
      */
     @Override
