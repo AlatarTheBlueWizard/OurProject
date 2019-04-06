@@ -7,7 +7,6 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Matrix;
 import android.os.Environment;
 import android.os.Handler;
@@ -58,7 +57,7 @@ public class MergeActivity extends AppCompatActivity {
     private ImageView groupTestView;
     private String msg;
 
-    //paramaters for layout
+    //Parameters for layout
     private android.widget.RelativeLayout.LayoutParams layoutParams; // constraint for drag/drop
 
     // Boolean representing whether scaleUp or scaleDown button is visible
@@ -149,10 +148,6 @@ public class MergeActivity extends AppCompatActivity {
                 try {
                     fOut.flush();
                     fOut.close();
-                    //Recycle Selfie Bitmap to save RAM
-                 //   selfieBitmap.recycle();
-                    //Help Garbage Cleaner
-                   // selfieBitmap = null;
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -242,11 +237,6 @@ public class MergeActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(), "No Face Detected", Toast.LENGTH_LONG);
         }
 
-        /*
-        findViewById(R.id.selfieTestView).setOnTouchListener(this);
-        //set drag event listener for defined layout
-        findViewById(R.id.rLayout1).setOnDragListener(this);
-        */
         //Long-Click-Listener for the selfieTestView drag and drop
         selfieTestView.setOnLongClickListener(new View.OnLongClickListener() {
             public boolean onLongClick(View v) {
@@ -272,7 +262,7 @@ public class MergeActivity extends AppCompatActivity {
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_STARTED");
                         break;
                     // Signals to view v that the drag point entered the bounding box
-                    // of the drop veiw
+                    // of the drop view
                     case DragEvent.ACTION_DRAG_ENTERED:
                         Log.d(msg, "Action is DragEvent.ACTION_DRAG_ENTERED");
                         int x_cord = (int) event.getX();
@@ -649,11 +639,6 @@ public class MergeActivity extends AppCompatActivity {
         // First scale down overlayBitmap (selfieBitmap) to current dimensions in dp.
         // We call convertDpToPx() to convert dp to px for createScaledBitmap() to receive px as
         // required.
-        /*
-        overlayBitmap = Bitmap.createScaledBitmap(overlayBitmap,
-                convertDpToPixel(getCurrentDimension()),
-                convertDpToPixel(getCurrentDimension()), true);
-                */
         int bitmap1Width = bitmap1.getWidth();
         int bitmap1Height = bitmap1.getHeight();
         int bitmap2Width = overlayBitmap.getWidth();
