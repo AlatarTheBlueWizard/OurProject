@@ -396,8 +396,8 @@ public class MergeActivity extends AppCompatActivity {
     }
 
     /**
-     * Scales the selfie image down to the previous size dimension found in R.dimen. If limit is reached,
-     * button is set to invisible.
+     * Scales the selfie image down to the previous size dimension found in R.dimen.
+     * If limit is reached, button is set to invisible.
      * @param view
      */
     public void scaleDown(View view) {
